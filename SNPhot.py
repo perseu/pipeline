@@ -124,8 +124,8 @@ def load_targets(filename):
         This function returns a PANDAS dataframe with the data from the input file.
 
     """
-    
-    
+    df = pd.read_csv(filename,header=0)
+    df.head(5)
     
     return df
 
