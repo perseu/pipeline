@@ -24,7 +24,7 @@ from astropy.cosmology import WMAP9 as cosmo
 
 
 ##############################################################################
-#                   Notes for this script...                                    #
+#                   Notes for this script...                                 #
 ##############################################################################
 """
 The cosmological constants for the calculations of the distances are taken from WMAP.
