@@ -164,7 +164,7 @@ def load_z_file(filename):
 # Getting script inline parameters
 args = sys.argv
 
-# Debug arguments... Comment the next line when the program is running.
+# Debug arguments... Comment the next line when the program is production.
 args = ['batch.py','t=outputfile.csv','z=list_redshift.txt']
 
 # Parsing and interpreting the command line.
@@ -175,6 +175,8 @@ for ii in range(len(args)):
     if argtemp[0] == 'z':
         redshift_file = argtemp[1]
         
+# This block of code checks the existance of the targets list and redshift list. 
+# It also checks if the respective files are empty or not.
 if len(args) > 1:
     if os.path.isfile(targets_file):
         if os.path.getsize(targets_file) > 0:
@@ -199,3 +201,7 @@ if len(args) > 1:
 if filesOK == False:
     exit()
     
+# Creating lists of unique values of object names and bands.
+object_list = targets_df.Object.unique()
+band_list = targets_df.Band.unique()
+
