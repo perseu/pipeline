@@ -14,9 +14,8 @@ import sys
 import os
 from sys import exit
 from os import path
-from sys import exit
-from astroquery.mast import Observations
-from astroquery.ned import Ned
+#from astroquery.mast import Observations
+#from astroquery.ned import Ned
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 # from astropy.cosmology import FlatLambdaCDM
@@ -38,6 +37,7 @@ GALEX image resolution = 1.5 arcsec/pixel
 pix_size = 1.5 # arcsec/pixel
 targets_file = []
 redshift_file = []
+filesOK = True
 
 ##############################################################################
 #                            The Functions                                   #
@@ -127,7 +127,7 @@ def load_targets(filename):
 
     """
     df = pd.read_csv(filename,header=0)
-    df.head(5)
+    df.columns
     
     return df
 
@@ -149,13 +149,53 @@ def load_z_file(filename):
 
     """
     df = pd.read_csv(filename,header=0)
-    df.head(5)
+    df.columns
     
     return df
     
+##############################################################################
+
     
     
 ##############################################################################
 ##########                 The main!!!                            ############
 ##############################################################################
 
+# Getting script inline parameters
+args = sys.argv
+
+# Debug arguments... Comment the next line when the program is running.
+args = ['batch.py','t=outputfile.csv','z=list_redshift.txt']
+
+# Parsing and interpreting the command line.
+for ii in range(len(args)):
+    argtemp = args[ii].split('=')
+    if argtemp[0] == 't':
+        targets_file = argtemp[1]
+    if argtemp[0] == 'z':
+        redshift_file = argtemp[1]
+        
+if len(args) > 1:
+    if os.path.isfile(targets_file):
+        if os.path.getsize(targets_file) > 0:
+            targets_df = load_targets(targets_file)
+        else:
+            print('\n\nTarget list file '+targets_file+' it\'s empty.')
+            filesOK = False            
+    else:
+        print('\n\nTarget list file '+targets_file+' not found.')
+        filesOK=False
+        
+    if os.path.isfile(redshift_file):
+        if os.path.getsize(redshift_file) > 0:
+            redshift_df = load_z_file(redshift_file)
+        else:
+            print('\n\nTarget list file '+redshift_file+' it\'s empty.')
+            filesOK = False            
+    else:
+        print('\n\nTarget list file '+redshift_file+' not found.')
+        filesOK=False
+        
+if filesOK == False:
+    exit()
+    
