@@ -36,6 +36,8 @@ GALEX image resolution = 1.5 arcsec/pixel
 ##############################################################################
 
 pix_size = 1.5 # arcsec/pixel
+targets_file = []
+redshift_file = []
 
 ##############################################################################
 #                            The Functions                                   #
@@ -129,6 +131,29 @@ def load_targets(filename):
     
     return df
 
+##############################################################################
+
+def load_z_file(filename):
+    """
+    Loads the data file with the table of redshifts.
+
+    Parameters
+    ----------
+    filename : STRING
+        The file containing the targets list and respective file paths.
+
+    Returns
+    -------
+    df : TYPE
+        This function returns a PANDAS dataframe with the data from the input file.
+
+    """
+    df = pd.read_csv(filename,header=0)
+    df.head(5)
+    
+    return df
+    
+    
     
 ##############################################################################
 ##########                 The main!!!                            ############
