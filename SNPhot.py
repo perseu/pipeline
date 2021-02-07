@@ -49,16 +49,16 @@ def radius_pix_kpc(n_pix,arc_p_pix,z):
     
     Parameters
     ----------
-    n_pix : float
+    n_pix : FLOAT
         Transverse distance in pixels.
-    arc_p_pix : float
+    arc_p_pix : FLOAT
         Size of each pixel in arcseconds.
-    z : float
+    z : FLOAT
         The redshift of the object.
 
     Returns
     -------
-    x_kpc : float
+    x_kpc : FLOAT
         The transverse distance in kpc.
 
     """

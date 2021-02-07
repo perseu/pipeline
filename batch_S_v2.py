@@ -2,7 +2,7 @@
 """
 Created on Fri Jan  8 18:35:20 2021
 
-This script will be used to attempt to gather photometric data from GALEX images
+This script will be used to attempt to gather photometric data from GALEX images.
 
 @author: Joao Aguas
 """
