@@ -175,7 +175,7 @@ def load_z_file(filename):
 args = sys.argv
 
 # Debug arguments... Comment the next line when the program is production.
-args = ['batch.py','t=outputfile.csv','z=list_redshift.txt']
+args = ['batch.py','t=outputfile.csv','z=zlistsample.txt']
 
 # Parsing and interpreting the command line.
 for ii in range(len(args)):
