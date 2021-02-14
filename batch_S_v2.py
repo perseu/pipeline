@@ -27,7 +27,7 @@ from astropy.coordinates import SkyCoord
 #                   Config variables, if needed...                           #
 ##############################################################################
 
-targetlist = [['Object','Band','Observation','Info','filepath']]
+targetlist = [['Object','Band','Observation','Info','filepath','ra','dec']]
 targetfail = []
 TO_counts = []
 radius= "0.02 deg"
@@ -190,7 +190,7 @@ for ii in range(targets_df.shape[0]):
             print(data_products)  
             for kk in range(len(data_products)):
                 einfo, runid, band = strip_filename(data_products['Local Path'][kk])
-                insinfo = [((targets_df['snname'][ii]).split()[0]),band,runid,einfo,str(data_products['Local Path'][kk])]
+                insinfo = ((targets_df['snname'][ii]).split()[0]),band,runid,einfo,str(data_products['Local Path'][kk]),str(pos.ra.value),str(pos.dec.value)
                 targetlist.append(insinfo)
                 insinfo = []
         else:
