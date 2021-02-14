@@ -198,7 +198,7 @@ def load_fits(filename):
 def center_in_pix(data, ra, dec):
     
     
-    w = wcs.WCS(data.header)
+    w = wcs.WCS(header)
     t_loc = [[ra,dec]]
     pix_loc = w.wcs_world2pix(t_loc,0)
     x0 = int(pix_loc[0][0])
@@ -254,6 +254,6 @@ if filesOK == False:
 object_list = targets_df.Object.unique()
 band_list = targets_df.Band.unique()
 
-for ii in range(targets_df):
+for ii in range(len(targets_df)):
     hdul, header = load_fits(targets_df['filepath'][ii])
     
