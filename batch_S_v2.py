@@ -144,7 +144,7 @@ def strip_filename(filelocation):
 args = sys.argv
 
 # Debug arguments... Comment the next line when the program is running.
-args = ['batch.py','t=list_snlist.txt']
+args = ['batch.py','t=snlistsample.txt']
 
 # Parsing and interpreting the command line.
 for ii in range(len(args)):
