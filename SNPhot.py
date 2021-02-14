@@ -1,8 +1,18 @@
 # -*- coding: utf-8 -*-
 """
+
+This script performs photometric measurements on the targets provided on the
+input targets list. The target list file contains information about the location
+of the FITS file, the name of the object, band used in the observation. The second
+input file provides the redshift of the target to calculate the the radius of the appertures for 
+the photometric mask.
+The script outputs a CSV file containing a line per target, each line contains 
+columns with the apparent magnitudes measured per apperture/band.
+
+
 Created on Sun Jan 24 20:30:57 2021
 
-@author: Cobra
+@author: Joao Aguas
 """
 
 
