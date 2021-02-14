@@ -45,6 +45,7 @@ GALEX image resolution = 1.5 arcsec/pixel
 ##############################################################################
 
 pix_size = 1.5 # arcsec/pixel
+mask_sizes=[5,10,15] # mask radius in kpc
 targets_file = []
 redshift_file = []
 filesOK = True
