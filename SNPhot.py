@@ -26,6 +26,8 @@ from sys import exit
 from os import path
 #from astroquery.mast import Observations
 #from astroquery.ned import Ned
+from astropy import wcs
+from astropy.io import fits
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 # from astropy.cosmology import FlatLambdaCDM
@@ -166,7 +168,43 @@ def load_z_file(filename):
     
 ##############################################################################
 
+def load_fits(filename):
+    """
+    This just loads a FITS file, and return the data and the header.
+
+    Parameters
+    ----------
+    filename : STRING
+        path to the FITS file.
+
+    Returns
+    -------
+    data : array
+        The data contained in the file.
     
+    header: array
+        An array containing the files header information.
+        
+    """
+    
+    data=fits.open(filename)
+    
+    header=data[0].header
+    
+    return data, header
+
+##############################################################################
+
+def center_in_pix(data, ra, dec):
+    
+    
+    w = wcs.WCS(data.header)
+    t_loc = [[ra,dec]]
+    pix_loc = w.wcs_world2pix(t_loc,0)
+    x0 = int(pix_loc[0][0])
+    y0 = int(pix_loc[0][1])
+    
+    return x0, y0
     
 ##############################################################################
 ##########                 The main!!!                            ############
@@ -216,3 +254,6 @@ if filesOK == False:
 object_list = targets_df.Object.unique()
 band_list = targets_df.Band.unique()
 
+for ii in range(targets_df):
+    hdul, header = load_fits(targets_df['filepath'][ii])
+    
