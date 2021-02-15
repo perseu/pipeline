@@ -47,10 +47,11 @@ GALEX image resolution = 1.5 arcsec/pixel
 ##############################################################################
 
 pix_size = 1.5 # arcsec/pixel
-mask_sizes=[5,10,15] # mask radius in kpc
+mask_sizes_kpc=[5,10,15] # mask radius in kpc
 targets_file = []
 redshift_file = []
 filesOK = True
+mask_size_pix = []
 
 ##############################################################################
 #                            The Functions                                   #
@@ -170,7 +171,7 @@ def load_z_file(filename):
 
 def load_fits(filename):
     """
-    This just loads a FITS file, and return the data and the header.
+    This just loads a FITS file, and return the data and the header. 
 
     Parameters
     ----------
@@ -195,7 +196,7 @@ def load_fits(filename):
 
 ##############################################################################
 
-def center_in_pix(data, ra, dec):
+def center_in_pix(header, ra, dec):
     
     
     w = wcs.WCS(header)
@@ -205,6 +206,21 @@ def center_in_pix(data, ra, dec):
     y0 = int(pix_loc[0][1])
     
     return x0, y0
+
+##############################################################################
+
+def estimate_radius_pix(rr, zz, zzerr, arc_per_pix):
+    
+    zzvals = [zz-zzerr, zz, zz+zzerr]
+    rrvals = []
+    
+    for ii in range(len(zzvals)):
+        rrvals.append(radius_kpc_pix(rr,pix_size,zzvals[ii][0]))
+    
+    rrmin = rrvals[0]
+    rr = rrvals[1]
+    rrmax = rrvals[2]
+    return rr , rrmin, rrmax
     
 ##############################################################################
 ##########                 The main!!!                            ############
@@ -255,5 +271,22 @@ object_list = targets_df.Object.unique()
 band_list = targets_df.Band.unique()
 
 for ii in range(len(targets_df)):
+    # This cycle loads the images, detects the center of the the interest area,
+    # creates the interest region for the photometry, and performs the photometric 
+    # estimates with the associated errors.
+    
     hdul, header = load_fits(targets_df['filepath'][ii])
+    x0, y0 = center_in_pix(header, targets_df['ra'][ii],targets_df['dec'][ii])
+    
+    # This cycle estimates the radius in pixels for the interest region.
+    # It takes the cosmology of the WMAP9 to calculate the angular sizes for the 
+    # distances stored on the array mask_sizes_kpc, and converts it to the angular
+    # size in pixels.
+    
+    for jj in range(len(mask_sizes_kpc)):
+        mask_size_pix.append(estimate_radius_pix(mask_sizes_kpc[jj],
+                                                 redshift_df[redshift_df['cubename']==targets_df['Object'][ii]]['zhelio'],
+                                                 redshift_df[redshift_df['cubename']==targets_df['Object'][ii]]['ezhelio'],
+                                                 pix_size))
+        
     
