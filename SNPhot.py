@@ -62,6 +62,7 @@ targets_file = []
 redshift_file = []
 filesOK = True
 mask_size_pix = []
+accumulator = []
 
 ##############################################################################
 #                            The Functions                                   #
@@ -333,7 +334,14 @@ for ii in range(len(targets_df)):
                                                  redshift_df[redshift_df['cubename']==targets_df['Object'][ii]]['zhelio'],
                                                  redshift_df[redshift_df['cubename']==targets_df['Object'][ii]]['ezhelio'],
                                                  pix_size))
-        
+    
+    templine = []
+    templine.append(targets_df['Object'][ii])
+    templine.append(targets_df['Band'][ii])
+    
     for kk in range(len(mask_size_pix)):
-        photo_estimate(hdul[0].data,bck,x0,y0,mask_size_pix[kk], zeropoint[targets_df['Band'][ii]])
-        
+        mag, err = photo_estimate(hdul[0].data,bck,x0,y0,mask_size_pix[kk], zeropoint[targets_df['Band'][ii]])
+        templine.append(mag)
+        templine.append(err)
+    
+    accumulator.append(templine)
