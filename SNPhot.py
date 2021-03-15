@@ -334,6 +334,9 @@ for ii in range(len(targets_df)):
                                                  redshift_df[redshift_df['cubename']==targets_df['Object'][ii]]['zhelio'],
                                                  redshift_df[redshift_df['cubename']==targets_df['Object'][ii]]['ezhelio'],
                                                  pix_size))
+
+    # This array is used to store the lines containing the calculations done with
+    # the several aperture sizes.
     
     templine = []
     templine.append(targets_df['Object'][ii])
@@ -343,5 +346,9 @@ for ii in range(len(targets_df)):
         mag, err = photo_estimate(hdul[0].data,bck,x0,y0,mask_size_pix[kk], zeropoint[targets_df['Band'][ii]])
         templine.append(mag)
         templine.append(err)
+    
+    # The accumulator stores the lines that are formatted above,
+    # afterward this information will be properly formatted, and stored in an
+    # output file.
     
     accumulator.append(templine)
