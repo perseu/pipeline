@@ -60,6 +60,7 @@ pix_size = 1.5 # arcsec/pixel
 mask_sizes_kpc=[5,10,15] # mask radius in kpc
 targets_file = []
 redshift_file = []
+output_file = []
 filesOK = True
 mask_size_pix = []
 accumulator = []
@@ -240,7 +241,7 @@ def background_rms(data):
     sigmaClipper = SigmaClip(sigma=3, maxiters=5)
     bck_estimator = SExtractorBackground(data)
     bkg = Background2D(data,(50,50),filter_size=(3,3),sigma_clip=sigmaClipper,bkg_estimator=bck_estimator)
-    #print((bkg.background_median, bkg.background_rms_median))
+    print((bkg.background_median, bkg.background_rms_median))
     return bkg.background_rms_median
 
 
@@ -351,4 +352,13 @@ for ii in range(len(targets_df)):
     # afterward this information will be properly formatted, and stored in an
     # output file.
     
-    accumulator.append(templine)
+    accumulator.append([templine])
+    
+    # creating output data format.
+    # Starting with the header.
+    
+outputdata = [['Object', 'Band']]
+for ll in range(len(mask_sizes_kpc)):
+    outputdata[0].append(str(mask_sizes_kpc[ll])+'kpc')
+    outputdata[0].append(str(mask_sizes_kpc[ll])+'kpc_error')
+        
