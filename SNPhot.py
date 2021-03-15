@@ -18,7 +18,7 @@ Created on Sun Jan 24 20:30:57 2021
 
 import numpy as np
 import pandas as pd
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import csv
 import sys
 import os
@@ -32,6 +32,10 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 # from astropy.cosmology import FlatLambdaCDM
 from astropy.cosmology import WMAP9 as cosmo
+from photutils import CircularAperture
+from photutils import aperture_photometry
+from photutils import Background2D, SExtractorBackground
+from astropy.stats import SigmaClip
 
 
 ##############################################################################
@@ -42,6 +46,12 @@ The cosmological constants for the calculations of the distances are taken from 
 GALEX image resolution = 1.5 arcsec/pixel
 
 """
+##############################################################################
+#                   Constants                                                #
+##############################################################################
+
+zeropoint = {'fd':18.82, 'nd':20.08}
+
 ##############################################################################
 #                   Config variables, if needed...                           #
 ##############################################################################
@@ -221,6 +231,36 @@ def estimate_radius_pix(rr, zz, zzerr, arc_per_pix):
     rr = rrvals[1]
     rrmax = rrvals[2]
     return rr , rrmin, rrmax
+
+##############################################################################
+
+def background_rms(data):
+    # Determines the rms of the background.
+    sigmaClipper = SigmaClip(sigma=3, maxiters=5)
+    bck_estimator = SExtractorBackground(data)
+    bkg = Background2D(data,(50,50),filter_size=(3,3),sigma_clip=sigmaClipper,bkg_estimator=bck_estimator)
+    #print((bkg.background_median, bkg.background_rms_median))
+    return bkg.background_rms_median
+
+
+##############################################################################
+
+def photo_estimate(data, background, x0, y0, radii, zp):
+    
+    phot_data=[]
+    mag = 0
+    magerr = 0
+    
+    aperture = [CircularAperture((x0,y0), r) for r in radii]
+    phot_data.append(aperture_photometry(data, aperture))
+    
+    mag = -2.5*np.log10(phot_data[0]['aperture_sum_0'][0])+zp
+    mag1 = -2.5*np.log10(phot_data[0]['aperture_sum_1'][0])+zp
+    mag2 = -2.5*np.log10(phot_data[0]['aperture_sum_2'][0])+zp
+    
+    magerr = np.abs(mag2-mag1)/2
+    
+    return mag, magerr
     
 ##############################################################################
 ##########                 The main!!!                            ############
@@ -275,8 +315,13 @@ for ii in range(len(targets_df)):
     # creates the interest region for the photometry, and performs the photometric 
     # estimates with the associated errors.
     
+    mask_size_pix = []
+    
     hdul, header = load_fits(targets_df['filepath'][ii])
     x0, y0 = center_in_pix(header, targets_df['ra'][ii],targets_df['dec'][ii])
+    
+    # Determining the background.
+    bck = background_rms(hdul[0].data)
     
     # This cycle estimates the radius in pixels for the interest region.
     # It takes the cosmology of the WMAP9 to calculate the angular sizes for the 
@@ -289,4 +334,6 @@ for ii in range(len(targets_df)):
                                                  redshift_df[redshift_df['cubename']==targets_df['Object'][ii]]['ezhelio'],
                                                  pix_size))
         
-    
+    for kk in range(len(mask_size_pix)):
+        photo_estimate(hdul[0].data,bck,x0,y0,mask_size_pix[kk], zeropoint[targets_df['Band'][ii]])
+        
