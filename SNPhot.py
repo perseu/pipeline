@@ -323,7 +323,8 @@ for ii in range(len(targets_df)):
     x0, y0 = center_in_pix(header, targets_df['ra'][ii],targets_df['dec'][ii])
     
     # Determining the background.
-    bck = background_rms(hdul[0].data)
+    # bck = background_rms(hdul[0].data)
+    bck = 0
     
     # This cycle estimates the radius in pixels for the interest region.
     # It takes the cosmology of the WMAP9 to calculate the angular sizes for the 
@@ -352,7 +353,7 @@ for ii in range(len(targets_df)):
     # afterward this information will be properly formatted, and stored in an
     # output file.
     
-    accumulator.append([templine])
+    accumulator.append(templine)
     
     # creating output data format.
     # Starting with the header.
