@@ -227,11 +227,11 @@ def estimate_radius_pix(rr, zz, zzerr, arc_per_pix):
     rrvals = []
     
     for ii in range(len(zzvals)):
-        rrvals.append(radius_kpc_pix(rr,pix_size,zzvals[ii][0]))
+        rrvals.append(radius_kpc_pix(rr,pix_size,zzvals[ii]))
     
-    rrmin = rrvals[0]
+    rrmax = rrvals[0]
     rr = rrvals[1]
-    rrmax = rrvals[2]
+    rrmin = rrvals[2]
     return rr , rrmin, rrmax
 
 ##############################################################################
@@ -332,10 +332,10 @@ for ii in range(len(targets_df)):
     # size in pixels.
     
     for jj in range(len(mask_sizes_kpc)):
-        mask_size_pix.append(estimate_radius_pix(mask_sizes_kpc[jj],
-                                                 redshift_df[redshift_df['cubename']==targets_df['Object'][ii]]['zhelio'],
-                                                 redshift_df[redshift_df['cubename']==targets_df['Object'][ii]]['ezhelio'],
-                                                 pix_size))
+        mask=mask_sizes_kpc[jj]
+        zhelio=redshift_df[redshift_df['cubename']==targets_df['Object'][ii]]['zhelio'].values[0]
+        ezhelio=redshift_df[redshift_df['cubename']==targets_df['Object'][ii]]['ezhelio'].values[0]
+        mask_size_pix.append(estimate_radius_pix(mask,zhelio,ezhelio,pix_size))
 
     # This array is used to store the lines containing the calculations done with
     # the several aperture sizes.
@@ -363,3 +363,5 @@ for ll in range(len(mask_sizes_kpc)):
     outputdata[0].append(str(mask_sizes_kpc[ll])+'kpc')
     outputdata[0].append(str(mask_sizes_kpc[ll])+'kpc_error')
         
+for ll in range(len(accumulator)):
+    outputdata.append(accumulator[ll])
