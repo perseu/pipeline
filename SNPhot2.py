@@ -12,13 +12,14 @@ columns with the apparent magnitudes measured per apperture/band.
 
 Created on Sun Jan 24 20:30:57 2021
 
-@author: Joao Aguas
+@author: Cepheu
 """
 
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
 import csv
 import sys
 import os
@@ -221,6 +222,78 @@ def center_in_pix(header, ra, dec):
 
 ##############################################################################
 
+def center_in_ra_dec(header, x0, y0):
+    
+    w = wcs.WCS(header)
+    pix_loc=[[x0, y0]]
+    locRADEC = w.wcs_pix2world(pix_loc,0)
+    ra = locRADEC[0][0]
+    dec = locRADEC[0][1]
+    
+    return ra, dec
+    
+
+##############################################################################
+
+def select_images(target_df, bands, objname):
+    
+    img_path_list = []
+    
+    for band in bands:
+        img_path_list.append(targets_df[(targets_df['Object']==objname) & (targets_df['Band']==band)]['filepath'].values)
+    
+    return img_path_list
+
+##############################################################################
+
+def stacking(obj_cube):
+    
+    # marking two points on the reference image, assuming the first image as the reference.
+    # These points are then translated from pixel coordinates to the WCS. 
+    # As all images have a WCS, it is easy to find out the location of those points 
+    # on other pictures of the same field, and afterward compute the necessary
+    # translation and rotation.
+    
+    final_list = []
+    
+    if(len(obj_cube)>1):    
+        img_shape = obj_cube[0][0].data.shape
+        ref_pix = [[(img_shape[0])/2,(img_shape[1])/2],[((img_shape[0])/2)+100,((img_shape[1])/2)+100]]
+        ref_RA_Dec = []
+        ref_vector = []
+        ref_RA_Dec.append(center_in_ra_dec(obj_cube[0][0].header,(img_shape[0])/2,(img_shape[0])/2))
+        ref_RA_Dec.append(center_in_ra_dec(obj_cube[0][0].header,((img_shape[0])/2)+100,((img_shape[0])/2)+100))
+        ref_vector = (ref_pix[1][0]-ref_pix[0][0],ref_pix[1][1]-ref_pix[0][1])
+        
+        final_image = np.zeros(shape=img_shape)
+        if(len(obj_cube)==1):
+            return obj_cube[0][0].data
+        else:
+            # Alignment code goes here!!!
+            for img in range(1,len(obj_cube)):
+                pix_list = []
+                t_vector = []
+                pix_list.append(center_in_pix(obj_cube[img][0].header,ref_RA_Dec[0][0],ref_RA_Dec[0][1]))
+                pix_list.append(center_in_pix(obj_cube[img][0].header,ref_RA_Dec[1][0],ref_RA_Dec[1][1]))
+                t_vector = (pix_list[1][0]-pix_list[0][0],pix_list[1][1]-pix_list[0][1])
+                
+                # Now needs the translation and rotation part of the code.
+                # I'M CONTINUING HEEERRRRREEEEEEE!!!
+            
+            # Computing the average.
+            for img in obj_cube:
+                final_image += img[0].data
+                
+            final_image = np.divide(final_image,len(obj_cube))
+            final_list.append(final_image)
+            
+            return final_list                        
+        
+    if(len(obj_cube)==0):
+        return -9999
+
+##############################################################################
+
 def estimate_radius_pix(rr, zz, zzerr, arc_per_pix):
     
     zzvals = [zz-zzerr, zz, zz+zzerr]
@@ -312,52 +385,79 @@ if filesOK == False:
 object_list = targets_df.Object.unique()
 band_list = targets_df.Band.unique()
 
-for ii in range(len(targets_df)):
-    # This cycle loads the images, detects the center of the the interest area,
-    # creates the interest region for the photometry, and performs the photometric 
-    # estimates with the associated errors.
-    
-    mask_size_pix = []
-    
-    hdul, header = load_fits(targets_df['filepath'][ii])
-    x0, y0 = center_in_pix(header, targets_df['ra'][ii],targets_df['dec'][ii])
-    
-    # Determining the background.
-    # bck = background_rms(hdul[0].data)
-    bck = 0
-    
-    # This cycle estimates the radius in pixels for the interest region.
-    # It takes the cosmology of the WMAP9 to calculate the angular sizes for the 
-    # distances stored on the array mask_sizes_kpc, and converts it to the angular
-    # size in pixels.
+for obj in object_list:
+    img_path_list=[]
+    img_path_list = select_images(targets_df, band_list, obj)
     
     for jj in range(len(mask_sizes_kpc)):
-        mask=mask_sizes_kpc[jj]
-        zhelio=redshift_df[redshift_df['cubename']==targets_df['Object'][ii]]['zhelio'].values[0]
-        ezhelio=redshift_df[redshift_df['cubename']==targets_df['Object'][ii]]['ezhelio'].values[0]
-        mask_size_pix.append(estimate_radius_pix(mask,zhelio,ezhelio,pix_size))
+        mask_pix=mask_sizes_kpc[jj]
+        zhelio=redshift_df[redshift_df['cubename']==targets_df[targets_df['Object']==obj][targets_df['Band']=='fd']['Object'][0]]['zhelio'][0]    # FROM HERE!!! I've to rewrite this part to get the object name!!!
+        ezhelio=redshift_df[redshift_df['cubename']==targets_df[targets_df['Object']==obj][targets_df['Band']=='fd']['Object'][0]]['ezhelio'][0]
+        mask_size_pix.append(estimate_radius_pix(mask_pix,zhelio,ezhelio,pix_size))
+    
+    for band in range(len(band_list)):
+        obj_cube = []
+        header_cube = []
+        for frame in img_path_list[band]:
+            tmpobj, tmphead = load_fits(frame)
+            header_cube.append(tmphead)
+            obj_cube.append(tmpobj)
+            
+        final_img = stacking(obj_cube)
+        final_img = final_img[0]
+        x0, y0 = center_in_pix(header_cube[0],targets_df[targets_df['Object']==obj]['ra'][0],targets_df[targets_df['Object']==obj]['dec'][0])        
+        mask = np.zeros(shape=final_img.shape)
+        
+        
+        
+        
 
-    # This array is used to store the lines containing the calculations done with
-    # the several aperture sizes.
+# for ii in range(len(targets_df)):
+#     # This cycle loads the images, detects the center of the the interest area,
+#     # creates the interest region for the photometry, and performs the photometric 
+#     # estimates with the associated errors.
     
-    templine = []
-    templine.append(targets_df['Object'][ii])
-    templine.append(targets_df['Band'][ii])
+#     mask_size_pix = []
     
-    for kk in range(len(mask_size_pix)):
-        print('Estimating target: '+ targets_df['Object'][ii])
-        mag, err = photo_estimate(hdul[0].data,bck,x0,y0,mask_size_pix[kk], zeropoint[targets_df['Band'][ii]])
-        templine.append(mag)
-        templine.append(err)
+#     hdul, header = load_fits(targets_df['filepath'][ii])
+#     x0, y0 = center_in_pix(header, targets_df['ra'][ii],targets_df['dec'][ii])
     
-    # The accumulator stores the lines that are formatted above,
-    # afterward this information will be properly formatted, and stored in an
-    # output file.
+#     # Determining the background.
+#     # bck = background_rms(hdul[0].data)
+#     bck = 0
     
-    accumulator.append(templine)
+#     # This cycle estimates the radius in pixels for the interest region.
+#     # It takes the cosmology of the WMAP9 to calculate the angular sizes for the 
+#     # distances stored on the array mask_sizes_kpc, and converts it to the angular
+#     # size in pixels.
     
-    # creating output data format.
-    # Starting with the header.
+#     for jj in range(len(mask_sizes_kpc)):
+#         mask=mask_sizes_kpc[jj]
+#         zhelio=redshift_df[redshift_df['cubename']==targets_df['Object'][ii]]['zhelio'].values[0]
+#         ezhelio=redshift_df[redshift_df['cubename']==targets_df['Object'][ii]]['ezhelio'].values[0]
+#         mask_size_pix.append(estimate_radius_pix(mask,zhelio,ezhelio,pix_size))
+
+#     # This array is used to store the lines containing the calculations done with
+#     # the several aperture sizes.
+    
+#     templine = []
+#     templine.append(targets_df['Object'][ii])
+#     templine.append(targets_df['Band'][ii])
+    
+#     for kk in range(len(mask_size_pix)):
+#         print('Estimating target: '+ targets_df['Object'][ii])
+#         mag, err = photo_estimate(hdul[0].data,bck,x0,y0,mask_size_pix[kk], zeropoint[targets_df['Band'][ii]])
+#         templine.append(mag)
+#         templine.append(err)
+    
+#     # The accumulator stores the lines that are formatted above,
+#     # afterward this information will be properly formatted, and stored in an
+#     # output file.
+    
+#     accumulator.append(templine)
+    
+#     # creating output data format.
+#     # Starting with the header.
     
 outputdata = [['Object', 'Band']]
 for ll in range(len(mask_sizes_kpc)):

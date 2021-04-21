@@ -32,6 +32,8 @@ targetfail = []
 TO_counts = []
 radius= "0.02 deg"
 descript = 'Background subtracted intensity map (J2000)'
+skybkg = 'Sky background image (J2000)'
+intmap = 'Intensity map (J2000)'
 targetfilename = 'outputfile.csv'
 failedfilename = 'failedtarget.csv'
 
@@ -111,8 +113,11 @@ def check_exist_location(ra, dec,radius):
     
     data_products_by_obs = Observations.get_product_list(final)
      	
-    ObjIDs = data_products_by_obs[(data_products_by_obs['description']==descript) & 
-                                  (data_products_by_obs['project']=='MIS')]
+    ObjIDs = data_products_by_obs[((data_products_by_obs['description']==descript) | 
+                                   (data_products_by_obs['description']==skybkg) |
+                                   (data_products_by_obs['description']==intmap)) & 
+                                  ((data_products_by_obs['project']=='MIS') | 
+                                   (data_products_by_obs['project']=='AIS'))]
     
     counts = len(ObjIDs)
     if counts == 0:
