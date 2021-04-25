@@ -209,8 +209,7 @@ for ii in range(targets_df.shape[0]):
 file = open(targetfilename, 'w+', newline ='')
 with file:
     write = csv.writer(file)
-    write.writerows(targetlist)
-    
+    write.writerows(targetlist)    
 file.close()
 
 if len(targetfail) > 0:
