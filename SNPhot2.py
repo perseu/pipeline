@@ -464,7 +464,11 @@ for obj in object_list:
         
         resaccum.append(laccum)
         
-        
+file = open(res_file, 'w+', newline ='')
+with file:
+    write = csv.writer(file)
+    write.writerows(resaccum)
+file.close()
 
 # for ii in range(len(targets_df)):
 #     # This cycle loads the images, detects the center of the the interest area,
