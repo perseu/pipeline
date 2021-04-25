@@ -66,6 +66,9 @@ filesOK = True
 mask_size_pix = []
 accumulator = []
 
+# Debug activation flags
+db_photo = 1 # When 1, it plots the region of interest.
+
 ##############################################################################
 #                            The Functions                                   #
 ##############################################################################
@@ -336,6 +339,40 @@ def photo_estimate(data, background, x0, y0, radii, zp):
     magerr = np.abs(mag2-mag1)/2
     
     return mag, magerr
+
+##############################################################################
+
+def photo_measure(data, zp, x0, y0, r):
+    
+    magval = []
+    erms = []
+    
+    for rr in r:
+        accum = 0
+        npix = 0
+        pixval = []
+        roi = data[np.int(y0-rr):np.int(y0+rr),np.int(x0-rr):np.int(x0+rr)]
+        for xx in range(roi.shape[0]):
+            for yy in range(roi.shape[1]):
+                if (np.sqrt((xx-rr/2)**2+(yy-rr/2)**2)<=rr) & (roi[yy][xx]>0):
+                    pixval.append(roi[yy][xx])
+                    accum += roi[yy][xx]
+                    npix +=1
+        
+        erms.append(np.sqrt(np.multiply(npix**2,np.average(np.array(pixval))**2)))
+        
+        magval.append(-2.5*np.log10(accum)+zp)
+        
+    magerr = np.abs(magval[2]-magval[1])/2
+    
+    err = np.sqrt(magerr**2 + (-2.5*np.log10(np.average(np.array(erms))))**2)
+    
+    if db_photo == 1:
+        plt.imshow(roi)
+        plt.show()
+        
+    return magval[0], err
+    
     
 ##############################################################################
 ##########                 The main!!!                            ############
@@ -386,13 +423,14 @@ object_list = targets_df.Object.unique()
 band_list = targets_df.Band.unique()
 
 for obj in object_list:
+    laccum = []
     img_path_list=[]
     img_path_list = select_images(targets_df, band_list, obj)
-    
+    zhelio=redshift_df[redshift_df['cubename']==targets_df[targets_df['Object']==obj][targets_df['Band']=='fd']['Object'][0]]['zhelio'][0]    # Erro no segundo objecto
+    ezhelio=redshift_df[redshift_df['cubename']==targets_df[targets_df['Object']==obj][targets_df['Band']=='fd']['Object'][0]]['ezhelio'][0]
+
     for jj in range(len(mask_sizes_kpc)):
-        mask_pix=mask_sizes_kpc[jj]
-        zhelio=redshift_df[redshift_df['cubename']==targets_df[targets_df['Object']==obj][targets_df['Band']=='fd']['Object'][0]]['zhelio'][0]    # FROM HERE!!! I've to rewrite this part to get the object name!!!
-        ezhelio=redshift_df[redshift_df['cubename']==targets_df[targets_df['Object']==obj][targets_df['Band']=='fd']['Object'][0]]['ezhelio'][0]
+        mask_pix=mask_sizes_kpc[jj]        
         mask_size_pix.append(estimate_radius_pix(mask_pix,zhelio,ezhelio,pix_size))
     
     for band in range(len(band_list)):
@@ -406,9 +444,10 @@ for obj in object_list:
         final_img = stacking(obj_cube)
         final_img = final_img[0]
         x0, y0 = center_in_pix(header_cube[0],targets_df[targets_df['Object']==obj]['ra'][0],targets_df[targets_df['Object']==obj]['dec'][0])        
-        mask = np.zeros(shape=final_img.shape)
+      #  mask = np.zeros(shape=final_img.shape)
         
-        
+        for kk in range(len(mask_size_pix)):
+            mag, merr = photo_measure(final_img, zeropoint[band_list[band]], x0, y0, mask_size_pix[kk])
         
         
 
