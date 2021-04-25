@@ -67,7 +67,7 @@ mask_size_pix = []
 accumulator = []
 
 # Debug activation flags
-db_photo = 1 # When 1, it plots the region of interest.
+db_photo = 0 # When 1, it plots the region of interest.
 
 ##############################################################################
 #                            The Functions                                   #
@@ -370,7 +370,11 @@ def photo_measure(data, zp, x0, y0, r):
     if db_photo == 1:
         plt.imshow(roi)
         plt.show()
-        
+    
+    if (magval[0] == np.inf) | (magval[0] == np.NaN) | (err == np.inf) | (err == np.NaN):
+        magval[0] = -9999
+        err = -9999
+    
     return magval[0], err
     
     
@@ -382,7 +386,7 @@ def photo_measure(data, zp, x0, y0, r):
 args = sys.argv
 
 # Debug arguments... Comment the next line when the program is production.
-args = ['batch.py','t=outputfile.csv','z=zlistsample.txt']
+args = ['batch.py','t=outputfile.csv','z=zlistsample.txt', 'o=results.txt']
 
 # Parsing and interpreting the command line.
 for ii in range(len(args)):
@@ -391,6 +395,8 @@ for ii in range(len(args)):
         targets_file = argtemp[1]
     if argtemp[0] == 'z':
         redshift_file = argtemp[1]
+    if argtemp[0] == 'o':
+        res_file = argtemp[1]
         
 # This block of code checks the existance of the targets list and redshift list. 
 # It also checks if the respective files are empty or not.
@@ -421,13 +427,15 @@ if filesOK == False:
 # Creating lists of unique values of object names and bands.
 object_list = targets_df.Object.unique()
 band_list = targets_df.Band.unique()
+resaccum = []
+radius_register = []
 
 for obj in object_list:
-    laccum = []
+    mask_size_pix = []
     img_path_list=[]
     img_path_list = select_images(targets_df, band_list, obj)
-    zhelio=redshift_df[redshift_df['cubename']==targets_df[targets_df['Object']==obj][targets_df['Band']=='fd']['Object'][0]]['zhelio'][0]    # Erro no segundo objecto
-    ezhelio=redshift_df[redshift_df['cubename']==targets_df[targets_df['Object']==obj][targets_df['Band']=='fd']['Object'][0]]['ezhelio'][0]
+    zhelio=np.array(redshift_df[redshift_df['cubename']==obj]['zhelio'])[0]    # Erro no segundo objecto
+    ezhelio=np.array(redshift_df[redshift_df['cubename']==obj]['ezhelio'])[0]
 
     for jj in range(len(mask_sizes_kpc)):
         mask_pix=mask_sizes_kpc[jj]        
@@ -436,6 +444,9 @@ for obj in object_list:
     for band in range(len(band_list)):
         obj_cube = []
         header_cube = []
+        laccum = []
+        laccum.append(obj)
+        laccum.append(band_list[band])
         for frame in img_path_list[band]:
             tmpobj, tmphead = load_fits(frame)
             header_cube.append(tmphead)
@@ -443,11 +454,15 @@ for obj in object_list:
             
         final_img = stacking(obj_cube)
         final_img = final_img[0]
-        x0, y0 = center_in_pix(header_cube[0],targets_df[targets_df['Object']==obj]['ra'][0],targets_df[targets_df['Object']==obj]['dec'][0])        
+        x0, y0 = center_in_pix(header_cube[0],np.array(targets_df[targets_df['Object']==obj]['ra'])[0],np.array(targets_df[targets_df['Object']==obj]['dec'])[0])        
       #  mask = np.zeros(shape=final_img.shape)
         
         for kk in range(len(mask_size_pix)):
             mag, merr = photo_measure(final_img, zeropoint[band_list[band]], x0, y0, mask_size_pix[kk])
+            laccum.append(mag)
+            laccum.append(merr)
+        
+        resaccum.append(laccum)
         
         
 
@@ -498,10 +513,10 @@ for obj in object_list:
 #     # creating output data format.
 #     # Starting with the header.
     
-outputdata = [['Object', 'Band']]
-for ll in range(len(mask_sizes_kpc)):
-    outputdata[0].append(str(mask_sizes_kpc[ll])+'kpc')
-    outputdata[0].append(str(mask_sizes_kpc[ll])+'kpc_error')
+# outputdata = [['Object', 'Band']]
+# for ll in range(len(mask_sizes_kpc)):
+#     outputdata[0].append(str(mask_sizes_kpc[ll])+'kpc')
+#     outputdata[0].append(str(mask_sizes_kpc[ll])+'kpc_error')
         
-for ll in range(len(accumulator)):
-    outputdata.append(accumulator[ll])
+# for ll in range(len(accumulator)):
+#     outputdata.append(accumulator[ll])
