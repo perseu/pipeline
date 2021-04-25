@@ -217,9 +217,8 @@ if len(targetfail) > 0:
     file1 = open(failedfilename, 'w+', newline ='')
     with file1:
         write1 = csv.writer(file1)
-        write1.writerow(targetfail)
-        
-    file.close()
+        write1.writerow(targetfail)        
+    file1.close()    
     print('Sadly there were some objects that had missing data. Could not help there.\nThe failed targets file is: '+failedfilename)
 else:
     print('CONGRATULATIONS!!! We had no problem locating your targets. No target failure file written. ')
