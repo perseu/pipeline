@@ -213,7 +213,29 @@ def load_fits(filename):
 ##############################################################################
 
 def center_in_pix(header, ra, dec):
-    
+    """
+    Converts RA and Dec to pixel coordinates. 
+
+    Parameters
+    ----------
+    header : STRING
+        FITS header information.
+        
+    ra : FLOAT
+        Right Ascension
+        
+    dec : FLOAT
+        Declination
+
+    Returns
+    -------
+    x0 : FLOAT 
+        x pixel coordinate
+        
+    y0 : FLOAT
+        y pixel coordinate
+        
+    """
     
     w = wcs.WCS(header)
     t_loc = [[ra,dec]]
@@ -226,6 +248,29 @@ def center_in_pix(header, ra, dec):
 ##############################################################################
 
 def center_in_ra_dec(header, x0, y0):
+    """
+    Converts pixel coordinates to Right Ascension and Declination. 
+
+    Parameters
+    ----------
+    header : STRING
+        FITS header information.
+        
+    x0 : FLOAT
+        x pixel coordinate
+        
+    y0 : FLOAT
+        y pixel coordinate
+
+    Returns
+    -------
+    ra : FLOAT 
+        Right Ascension
+        
+    dec : FLOAT
+        Declination
+        
+    """
     
     w = wcs.WCS(header)
     pix_loc=[[x0, y0]]
@@ -239,6 +284,27 @@ def center_in_ra_dec(header, x0, y0):
 ##############################################################################
 
 def select_images(target_df, bands, objname):
+    """
+    Takes the targets lists and returns a list of paths to the downloaded images. 
+
+    Parameters
+    ----------
+    target_df : Dataframe
+        The targets dataframe.
+        
+    bands : array
+        The bands used on the observations
+        
+    objname : string
+        Target name
+
+    Returns
+    -------
+    img_path_list : array
+        Paths for the files of the specific name objname
+                
+    """
+
     
     img_path_list = []
     
@@ -250,12 +316,21 @@ def select_images(target_df, bands, objname):
 ##############################################################################
 
 def stacking(obj_cube):
-    
-    # marking two points on the reference image, assuming the first image as the reference.
-    # These points are then translated from pixel coordinates to the WCS. 
-    # As all images have a WCS, it is easy to find out the location of those points 
-    # on other pictures of the same field, and afterward compute the necessary
-    # translation and rotation.
+    """
+    This function stacks a list of images from the obj_cube and returns an
+    average image.
+
+    Parameters
+    ----------
+    obj_cube : List
+        List of images.
+
+    Returns
+    -------
+    final_list : List
+        List of stacked images
+                
+    """
     
     final_list = []
     
@@ -298,6 +373,38 @@ def stacking(obj_cube):
 ##############################################################################
 
 def estimate_radius_pix(rr, zz, zzerr, arc_per_pix):
+    """
+    This function estimates the radius in pixels for the several radius in kpc
+    stored in rr, using the redshift stored in zz, and taking into account the
+    error in zzerr, and the correspondence between angular size and pixel size.
+    
+    Parameters
+    ----------
+    rr : Float
+        Radius in kpc.
+        
+    zz : Float
+        Redshift.
+        
+    zzerr : Float
+        Redshift associated error.
+        
+    arc_per_pix : Float
+        The size in arcsec for a pixel.
+        
+    Returns
+    -------
+    rr : Float
+        The radius of the mask in pixels
+    
+    rrmin : Float
+        The minimum radius taking into account the error.
+    
+    rrmax : Float
+        The maximum radius taking into account the error.
+                
+    """
+
     
     zzvals = [zz-zzerr, zz, zz+zzerr]
     rrvals = []
@@ -313,7 +420,21 @@ def estimate_radius_pix(rr, zz, zzerr, arc_per_pix):
 ##############################################################################
 
 def background_rms(data):
-    # Determines the rms of the background.
+    """
+    Computes the RMS from the image stored in the array data.
+
+    Parameters
+    ----------
+    data : array
+        Image array.
+
+    Returns
+    -------
+    rms_median : 
+        List of stacked images
+                
+    """
+    
     sigmaClipper = SigmaClip(sigma=3, maxiters=5)
     bck_estimator = SExtractorBackground(data)
     bkg = Background2D(data,(50,50),filter_size=(3,3),sigma_clip=sigmaClipper,bkg_estimator=bck_estimator)
@@ -324,6 +445,40 @@ def background_rms(data):
 ##############################################################################
 
 def photo_estimate(data, background, x0, y0, radii, zp):
+    """
+    Computes the photometry for a mask of radius 'radii', centered at the pixel
+    coordinates x0, y0, with the zeropoint zp, and taking into account the 
+    background.
+
+    Parameters
+    ----------
+    data : array
+        Image array.
+        
+    background : Float
+        background value.
+        
+    x0 : Float
+        x0 pixel coordinate.
+    
+    y0 : Float
+        y0 pixel coordinate.
+        
+    radii : Float
+        The radius of the apperture.
+        
+    zp : Float
+        The zeropoint.
+
+    Returns
+    -------
+    mag : Float 
+        The estimated magnitude.
+        
+    magerr : Float
+        The associated error.
+                
+    """
     
     phot_data=[]
     mag = 0
@@ -343,6 +498,38 @@ def photo_estimate(data, background, x0, y0, radii, zp):
 ##############################################################################
 
 def photo_measure(data, zp, x0, y0, r):
+    """
+    Computes the photometry for a mask of radius 'radii', centered at the pixel
+    coordinates x0, y0, with the zeropoint zp, and taking into account the 
+    background.
+
+    Parameters
+    ----------
+    data : array
+        Image array.
+        
+    zp : Float
+        The zeropoint.
+        
+    x0 : Float
+        x0 pixel coordinate.
+    
+    y0 : Float
+        y0 pixel coordinate.
+        
+    r : Float
+        The radius of the apperture.
+        
+
+    Returns
+    -------
+    magval : Float 
+        The estimated magnitude.
+        
+    err : Float
+        The associated error.
+                
+    """
     
     magval = []
     erms = []
@@ -381,6 +568,26 @@ def photo_measure(data, zp, x0, y0, r):
 ##############################################################################
 ##########                 The main!!!                            ############
 ##############################################################################
+"""
+This script computes the magnitude and associated errors of a batch of objects
+that are stored on a target file, taking a redshift file to compute the
+distances and radius. 
+
+Parameters
+----------
+t : CSV file
+    Target list.
+    
+z : CSV file
+    Redshift list.
+    
+
+Returns
+-------
+o : CSV Output file 
+    The output with the estimated magnitudes/errors for the required appertures.
+                
+"""
 
 # Getting script inline parameters
 args = sys.argv
@@ -469,58 +676,3 @@ with file:
     write = csv.writer(file)
     write.writerows(resaccum)
 file.close()
-
-# for ii in range(len(targets_df)):
-#     # This cycle loads the images, detects the center of the the interest area,
-#     # creates the interest region for the photometry, and performs the photometric 
-#     # estimates with the associated errors.
-    
-#     mask_size_pix = []
-    
-#     hdul, header = load_fits(targets_df['filepath'][ii])
-#     x0, y0 = center_in_pix(header, targets_df['ra'][ii],targets_df['dec'][ii])
-    
-#     # Determining the background.
-#     # bck = background_rms(hdul[0].data)
-#     bck = 0
-    
-#     # This cycle estimates the radius in pixels for the interest region.
-#     # It takes the cosmology of the WMAP9 to calculate the angular sizes for the 
-#     # distances stored on the array mask_sizes_kpc, and converts it to the angular
-#     # size in pixels.
-    
-#     for jj in range(len(mask_sizes_kpc)):
-#         mask=mask_sizes_kpc[jj]
-#         zhelio=redshift_df[redshift_df['cubename']==targets_df['Object'][ii]]['zhelio'].values[0]
-#         ezhelio=redshift_df[redshift_df['cubename']==targets_df['Object'][ii]]['ezhelio'].values[0]
-#         mask_size_pix.append(estimate_radius_pix(mask,zhelio,ezhelio,pix_size))
-
-#     # This array is used to store the lines containing the calculations done with
-#     # the several aperture sizes.
-    
-#     templine = []
-#     templine.append(targets_df['Object'][ii])
-#     templine.append(targets_df['Band'][ii])
-    
-#     for kk in range(len(mask_size_pix)):
-#         print('Estimating target: '+ targets_df['Object'][ii])
-#         mag, err = photo_estimate(hdul[0].data,bck,x0,y0,mask_size_pix[kk], zeropoint[targets_df['Band'][ii]])
-#         templine.append(mag)
-#         templine.append(err)
-    
-#     # The accumulator stores the lines that are formatted above,
-#     # afterward this information will be properly formatted, and stored in an
-#     # output file.
-    
-#     accumulator.append(templine)
-    
-#     # creating output data format.
-#     # Starting with the header.
-    
-# outputdata = [['Object', 'Band']]
-# for ll in range(len(mask_sizes_kpc)):
-#     outputdata[0].append(str(mask_sizes_kpc[ll])+'kpc')
-#     outputdata[0].append(str(mask_sizes_kpc[ll])+'kpc_error')
-        
-# for ll in range(len(accumulator)):
-#     outputdata.append(accumulator[ll])
