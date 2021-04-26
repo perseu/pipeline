@@ -68,6 +68,7 @@ accumulator = []
 
 # Debug activation flags
 db_photo = 0 # When 1, it plots the region of interest.
+silentmode = 0 # When 0, it displays on the console the calculated values.
 
 ##############################################################################
 #                            The Functions                                   #
@@ -593,7 +594,7 @@ o : CSV Output file
 args = sys.argv
 
 # Debug arguments... Comment the next line when the program is production.
-args = ['batch.py','t=outputfile.csv','z=zlistsample.txt', 'o=results.txt']
+args = ['batch.py','t=outputfile_sample.csv','z=zlistsample.txt', 'o=results.txt']
 
 # Parsing and interpreting the command line.
 for ii in range(len(args)):
@@ -668,7 +669,8 @@ for obj in object_list:
             mag, merr = photo_measure(final_img, zeropoint[band_list[band]], x0, y0, mask_size_pix[kk])
             laccum.append(mag)
             laccum.append(merr)
-        
+            if silentmode == 0:
+                print('Object='+str(obj)+', Band='+str(band_list[band])+', Radius(in kpc)='+str(mask_sizes_kpc[kk])+', Radius(in pixels)='+str(mask_size_pix[kk][0])+', Mag='+str(mag)+', Error='+str(merr))
         resaccum.append(laccum)
         
 file = open(res_file, 'w+', newline ='')
