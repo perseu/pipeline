@@ -608,7 +608,7 @@ o : CSV Output file
 args = sys.argv
 
 # Debug arguments... Comment the next line when the program is production.
-args = ['batch.py','t=outputfile_sample.csv','z=zlistsample.txt', 'o=results.txt']
+args = ['batch.py','t=outputfile.csv','z=list_redshift.txt', 'o=results_final.txt']
 
 # Parsing and interpreting the command line.
 for ii in range(len(args)):
@@ -649,6 +649,35 @@ if filesOK == False:
 # Creating lists of unique values of object names and bands.
 object_list = targets_df.Object.unique()
 band_list = targets_df.Band.unique()
+
+# Discarding Objects that do not have the required information.
+
+failed_obj = []
+valid_obj = []
+
+for obj in object_list:
+    temp_z = []
+    temp_t = []
+    t_fail = False
+    temp_z = redshift_df[redshift_df['cubename']==obj]
+    temp_t = targets_df[targets_df['Object']==obj]
+    if (len(temp_z) == 0) | (len(temp_t) == 0):
+        t_fail = True
+    else:
+        if (np.array(temp_z['zhelio'])[0]==np.nan) | (np.array(temp_z['ezhelio'])[0]==np.nan):
+            t_fail = True
+        if (np.array(temp_t['ra'])[0]==np.nan) | (np.array(temp_t['dec'])[0]==np.nan):
+            t_fail = True
+            
+    if t_fail == True:
+        failed_obj.append(obj)
+    else:
+        valid_obj.append(obj)
+        
+object_list = valid_obj
+
+
+# Starting the measurements!
 resaccum = []
 radius_register = []
 
@@ -684,7 +713,7 @@ for obj in object_list:
             laccum.append(mag)
             laccum.append(merr)
             if silentmode == 0:
-                print('Object='+str(obj)+',\tBand='+str(band_list[band])+',\tRadius(in kpc)='+str(mask_sizes_kpc[kk])+',\tRadius(in pixels)='+str(mask_size_pix[kk][0])+',\tMag='+str(mag)+',\tError='+str(merr))
+                print('Object='+str(obj)+',\tBand='+str(band_list[band])+',\tRedshift='+str(zhelio)+',\tRedshift Error='+str(ezhelio)+',\tRadius(in kpc)='+str(mask_sizes_kpc[kk])+',\tRadius(in pixels)='+str(mask_size_pix[kk][0])+',\tMag='+str(mag)+',\tError='+str(merr))
         resaccum.append(laccum)
         
 file = open(res_file, 'w+', newline ='')
