@@ -704,17 +704,20 @@ for obj in object_list:
             obj_cube.append(tmpobj)
             
         final_img = stacking(obj_cube)
-        final_img = final_img[0]
-        x0, y0 = center_in_pix(header_cube[0],np.array(targets_df[targets_df['Object']==obj]['ra'])[0],np.array(targets_df[targets_df['Object']==obj]['dec'])[0])        
-      #  mask = np.zeros(shape=final_img.shape)
+        if len(np.shape(final_img)) > 0:
+            final_img = final_img[0]
+            x0, y0 = center_in_pix(header_cube[0],np.array(targets_df[targets_df['Object']==obj]['ra'])[0],np.array(targets_df[targets_df['Object']==obj]['dec'])[0])        
+            #  mask = np.zeros(shape=final_img.shape)
         
-        for kk in range(len(mask_size_pix)):
-            mag, merr = photo_measure(final_img, zeropoint[band_list[band]], x0, y0, mask_size_pix[kk])
-            laccum.append(mag)
-            laccum.append(merr)
-            if silentmode == 0:
-                print('Object='+str(obj)+',\tBand='+str(band_list[band])+',\tRedshift='+str(zhelio)+',\tRedshift Error='+str(ezhelio)+',\tRadius(in kpc)='+str(mask_sizes_kpc[kk])+',\tRadius(in pixels)='+str(mask_size_pix[kk][0])+',\tMag='+str(mag)+',\tError='+str(merr))
-        resaccum.append(laccum)
+            for kk in range(len(mask_size_pix)):
+                mag, merr = photo_measure(final_img, zeropoint[band_list[band]], x0, y0, mask_size_pix[kk])
+                laccum.append(mag)
+                laccum.append(merr)
+                if silentmode == 0:
+                    print('Object='+str(obj)+',\tBand='+str(band_list[band])+',\tRedshift='+str(zhelio)+',\tRedshift Error='+str(ezhelio)+',\tRadius(in kpc)='+str(mask_sizes_kpc[kk])+',\tRadius(in pixels)='+str(mask_size_pix[kk][0])+',\tMag='+str(mag)+',\tError='+str(merr))
+            resaccum.append(laccum)
+        else:
+            failed_obj.append(obj)
         
 file = open(res_file, 'w+', newline ='')
 with file:

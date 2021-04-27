@@ -76,6 +76,7 @@ target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+.ipynb
 
 # IPython
 profile_default/
@@ -135,3 +136,6 @@ list_redshift.txt
 list_snlist.txt
 outputfile.csv
 outputfile_out.csv
+results.txt
+results01.txt
+AMUSING_list_corez_final.txt
