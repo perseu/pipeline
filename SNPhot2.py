@@ -369,7 +369,7 @@ def stacking(obj_cube):
             return final_list                        
         
     if(len(obj_cube)==0):
-        return -9999
+        return -99
 
 ##############################################################################
 
@@ -544,10 +544,24 @@ def photo_measure(data, zp, x0, y0, r):
             for yy in range(roi.shape[1]):
                 if (np.sqrt((xx-rr/2)**2+(yy-rr/2)**2)<=rr) & (roi[yy][xx]>0):
                     pixval.append(roi[yy][xx])
-                    accum += roi[yy][xx]
                     npix +=1
+                    
+        avgval = np.average(pixval)
+        npix=0
+        pixval = []
         
-        erms.append(np.sqrt(np.multiply(npix**2,np.average(np.array(pixval))**2)))
+        for xx in range(roi.shape[0]):
+            for yy in range(roi.shape[1]):
+                if (np.sqrt((xx-rr/2)**2+(yy-rr/2)**2)<=rr):
+                    npix +=1
+                    if (roi[yy][xx]>0):
+                        pixval.append(roi[yy][xx])
+                        accum += roi[yy][xx]
+                    else:
+                        pixval.append(avgval)
+                        accum += avgval
+                        
+        erms.append(np.sqrt(np.multiply(npix,np.average(np.array(pixval)))))
         
         magval.append(-2.5*np.log10(accum)+zp)
         
@@ -560,8 +574,8 @@ def photo_measure(data, zp, x0, y0, r):
         plt.show()
     
     if (magval[0] == np.inf) | (magval[0] == np.NaN) | (err == np.inf) | (err == np.NaN):
-        magval[0] = -9999
-        err = -9999
+        magval[0] = -99
+        err = -99
     
     return magval[0], err
     
@@ -670,7 +684,7 @@ for obj in object_list:
             laccum.append(mag)
             laccum.append(merr)
             if silentmode == 0:
-                print('Object='+str(obj)+', Band='+str(band_list[band])+', Radius(in kpc)='+str(mask_sizes_kpc[kk])+', Radius(in pixels)='+str(mask_size_pix[kk][0])+', Mag='+str(mag)+', Error='+str(merr))
+                print('Object='+str(obj)+',\tBand='+str(band_list[band])+',\tRadius(in kpc)='+str(mask_sizes_kpc[kk])+',\tRadius(in pixels)='+str(mask_size_pix[kk][0])+',\tMag='+str(mag)+',\tError='+str(merr))
         resaccum.append(laccum)
         
 file = open(res_file, 'w+', newline ='')
