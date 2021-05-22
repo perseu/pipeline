@@ -608,7 +608,7 @@ o : CSV Output file
 args = sys.argv
 
 # Debug arguments... Comment the next line when the program is production.
-args = ['batch.py','t=outputfile.csv','z=list_redshift.txt', 'o=results_final.txt']
+args = ['batch.py','t=outputfile.csv','z=list_redshift.txt', 'o=results_final1.txt']
 
 # Parsing and interpreting the command line.
 for ii in range(len(args)):
@@ -685,9 +685,10 @@ for obj in object_list:
     mask_size_pix = []
     img_path_list=[]
     img_path_list = select_images(targets_df, band_list, obj)
-    zhelio=np.array(redshift_df[redshift_df['cubename']==obj]['zhelio'])[0]    # Erro no segundo objecto
+    zhelio=np.array(redshift_df[redshift_df['cubename']==obj]['zhelio'])[0]    
     ezhelio=np.array(redshift_df[redshift_df['cubename']==obj]['ezhelio'])[0]
-
+    
+    # Calculating the radius in pixels that correspond to a radius of 5kpc, 10kpc and 15kpc.
     for jj in range(len(mask_sizes_kpc)):
         mask_pix=mask_sizes_kpc[jj]        
         mask_size_pix.append(estimate_radius_pix(mask_pix,zhelio,ezhelio,pix_size))
@@ -695,21 +696,20 @@ for obj in object_list:
     for band in range(len(band_list)):
         obj_cube = []
         header_cube = []
-        laccum = []
+        laccum = []    # Line accumulator. It's used to create the output line. Starts with the object name, band, and afterwards magnitude and associated error.
         laccum.append(obj)
         laccum.append(band_list[band])
-        for frame in img_path_list[band]:
+        for frame in img_path_list[band]:  # This cycle loads the filepaths to arrays depending on the object and band that is being reduced.
             tmpobj, tmphead = load_fits(frame)
             header_cube.append(tmphead)
             obj_cube.append(tmpobj)
             
-        final_img = stacking(obj_cube)
+        final_img = stacking(obj_cube)  # stacking images of the same object, and with the same band.
         if len(np.shape(final_img)) > 0:
             final_img = final_img[0]
             x0, y0 = center_in_pix(header_cube[0],np.array(targets_df[targets_df['Object']==obj]['ra'])[0],np.array(targets_df[targets_df['Object']==obj]['dec'])[0])        
-            #  mask = np.zeros(shape=final_img.shape)
         
-            for kk in range(len(mask_size_pix)):
+            for kk in range(len(mask_size_pix)): # In this cycle it computes the magnitudes for the desired mask sizes, and stores it first in a line accumulator laccum. At the end of the cycle the line is stored in the result accumulator resaccum.
                 mag, merr = photo_measure(final_img, zeropoint[band_list[band]], x0, y0, mask_size_pix[kk])
                 laccum.append(mag)
                 laccum.append(merr)
@@ -717,7 +717,7 @@ for obj in object_list:
                     print('Object='+str(obj)+',\tBand='+str(band_list[band])+',\tRedshift='+str(zhelio)+',\tRedshift Error='+str(ezhelio)+',\tRadius(in kpc)='+str(mask_sizes_kpc[kk])+',\tRadius(in pixels)='+str(mask_size_pix[kk][0])+',\tMag='+str(mag)+',\tError='+str(merr))
             resaccum.append(laccum)
         else:
-            failed_obj.append(obj)
+            failed_obj.append(obj) # If the stacking function does not return an image, it does not attempt to compute the magnitudes and errors, it simply adds the object to a failure list.
         
 file = open(res_file, 'w+', newline ='')
 with file:
