@@ -542,7 +542,7 @@ def photo_measure(data, zp, x0, y0, r):
         roi = data[np.int(y0-rr):np.int(y0+rr),np.int(x0-rr):np.int(x0+rr)]
         for xx in range(roi.shape[0]):
             for yy in range(roi.shape[1]):
-                if (np.sqrt((xx-rr/2)**2+(yy-rr/2)**2)<=rr) & (roi[yy][xx]>0):
+                if (np.sqrt((xx-rr/2)**2+(yy-rr/2)**2)<=rr): # & (roi[yy][xx]>0):
                     pixval.append(roi[yy][xx])
                     npix +=1
                     
@@ -554,12 +554,12 @@ def photo_measure(data, zp, x0, y0, r):
             for yy in range(roi.shape[1]):
                 if (np.sqrt((xx-rr/2)**2+(yy-rr/2)**2)<=rr):
                     npix +=1
-                    if (roi[yy][xx]>0):
-                        pixval.append(roi[yy][xx])
-                        accum += roi[yy][xx]
-                    else:
-                        pixval.append(avgval)
-                        accum += avgval
+#                    if (roi[yy][xx]>0):
+                    pixval.append(roi[yy][xx])
+                    accum += roi[yy][xx]
+#                    else:
+#                        pixval.append(avgval)
+#                        accum += avgval
                         
         erms.append(np.sqrt(np.multiply(npix,np.average(np.array(pixval)))))
         
@@ -608,7 +608,7 @@ o : CSV Output file
 args = sys.argv
 
 # Debug arguments... Comment the next line when the program is production.
-args = ['batch.py','t=outputfile.csv','z=list_redshift.txt', 'o=results_final1.txt']
+args = ['batch.py','t=outputfile_MIS_ONLY.csv','z=list_redshift.txt', 'o=results_finalMIS.txt']
 
 # Parsing and interpreting the command line.
 for ii in range(len(args)):
@@ -678,10 +678,12 @@ object_list = valid_obj
 
 
 # Starting the measurements!
-resaccum = []
+resaccum = [['Object','Band','mag_5kpc','emag_5kpc','mag_10kpc','emag_10kpc','mag_15kpc','emag_15kpc']]
 radius_register = []
 
+
 for obj in object_list:
+    band_flag = 1
     mask_size_pix = []
     img_path_list=[]
     img_path_list = select_images(targets_df, band_list, obj)
@@ -698,19 +700,28 @@ for obj in object_list:
         header_cube = []
         laccum = []    # Line accumulator. It's used to create the output line. Starts with the object name, band, and afterwards magnitude and associated error.
         laccum.append(obj)
-        laccum.append(band_list[band])
+        # laccum.append(band_list[band]) # NOTE: Need to change this band ID to the one on the photo file.
         for frame in img_path_list[band]:  # This cycle loads the filepaths to arrays depending on the object and band that is being reduced.
             tmpobj, tmphead = load_fits(frame)
             header_cube.append(tmphead)
             obj_cube.append(tmpobj)
-            
+        
+        # This block of code gives the correct band name to the line. It takes it from the filename. 
+        # There may be targets that only have information from a single band instead of both.
+        if frame.split('-')[-2]=='fd': 
+            laccum.append('FUV')
+        if frame.split('-')[-2]=='nd':
+            laccum.append('NUV')
+        if (frame.split('-')[-2]!='nd') & (frame.split('-')[-2]!='fd'):
+            band_flag = 0
+        
         final_img = stacking(obj_cube)  # stacking images of the same object, and with the same band.
-        if len(np.shape(final_img)) > 0:
+        if (len(np.shape(final_img)) > 0) & (band_flag == 1):
             final_img = final_img[0]
             x0, y0 = center_in_pix(header_cube[0],np.array(targets_df[targets_df['Object']==obj]['ra'])[0],np.array(targets_df[targets_df['Object']==obj]['dec'])[0])        
         
             for kk in range(len(mask_size_pix)): # In this cycle it computes the magnitudes for the desired mask sizes, and stores it first in a line accumulator laccum. At the end of the cycle the line is stored in the result accumulator resaccum.
-                mag, merr = photo_measure(final_img, zeropoint[band_list[band]], x0, y0, mask_size_pix[kk])
+                mag, merr = photo_measure(final_img, zeropoint[frame.split('-')[-2]], x0, y0, mask_size_pix[kk])
                 laccum.append(mag)
                 laccum.append(merr)
                 if silentmode == 0:
