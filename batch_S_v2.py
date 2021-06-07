@@ -34,7 +34,7 @@ radius= "0.02 deg"
 descript = 'Background subtracted intensity map (J2000)'
 skybkg = 'Sky background image (J2000)'
 intmap = 'Intensity map (J2000)'
-targetfilename = 'outputfile.csv'
+targetfilename = 'outputfile_MIS_ONLY.csv'
 failedfilename = 'failedtarget.csv'
 
 ##############################################################################
@@ -116,8 +116,8 @@ def check_exist_location(ra, dec,radius):
     ObjIDs = data_products_by_obs[((data_products_by_obs['description']==descript) | 
                                    (data_products_by_obs['description']==skybkg) |
                                    (data_products_by_obs['description']==intmap)) & 
-                                  ((data_products_by_obs['project']=='MIS') | 
-                                   (data_products_by_obs['project']=='AIS'))]
+                                  ((data_products_by_obs['project']=='MIS') #| 
+                                   )] # (data_products_by_obs['project']=='AIS')
     
     counts = len(ObjIDs)
     if counts == 0:
@@ -149,7 +149,7 @@ def strip_filename(filelocation):
 args = sys.argv
 
 # Debug arguments... Comment the next line when the program is running.
-args = ['batch.py','t=snlistsample.txt']
+args = ['batch.py','t=list_snlist.txt']
 
 # Parsing and interpreting the command line.
 for ii in range(len(args)):
