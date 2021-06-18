@@ -2,14 +2,16 @@
 """
 Created on Sun Jun  6 02:22:32 2021
 
-Data Visualisation script. This script takes the output data from the photometry script, and presents the relations between the important variables.
+Data Visualisation script. This script takes the output data from the photometry script, 
+and presents the relations between the important variables.
 
-@author: Cobra
+@author: João Águas
 """
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 import sys
 import os
 
@@ -36,7 +38,7 @@ def load_data(filename,header="infer"):
 
 def clear_nan(df):
     
-    df.replace(np.nan,value=-99)
+    df.replace(np.nan,value=-99, inplace=True)
     return df
 
 #############################################################################
@@ -57,13 +59,45 @@ def available_bands(df):
 
 def merge_redshift(data_df, z_df):
     
+    fail_value = []
+    
     data_contents = data_df.Object.unique()
     z_contents = z_df.cubename.unique()
+    bands_contents = data_df.Band.unique()
     
-    # Adding a new z column to the data_df dataframe.
-    data_df['z'] = np.zeros(len(data_df))
+    z = []
+    ez = []
     
+    # Filling the z and e_z columns with the values from the z_df dataframe
+    for ii in range(len(data_df)):
+        if data_df['Object'][ii] in np.array(z_df['cubename']):
+            z.append(z_df[z_df.cubename==data_df.Object[ii]].zhelio.unique()[0])
+            ez.append(z_df[z_df.cubename==data_df.Object[ii]].ezhelio.unique()[0])
+        else:
+            z.append(-99)
+            ez.append(-99)
+
+    # Adding a new z and e_z columns to the data_df dataframe.
+    # the z column contains the measured redshift and the e_z contains the 
+    # associated error of the redshift measurement.
+    data_df['z']=z
+    data_df['ez']=ez
+        
+    return data_df
+            
+#############################################################################
+
+def preview_relations(data_df,sx,sy):
     
+    data_df[data_df[data_df.columns[2:]]<0]=np.nan
+    plt.figure(figsize=(sx,sy))
+    sns.pairplot(data_df, dropna=True)
+    
+    return 0
+
+#############################################################################
+
+
 
 #############################################################################
 # If this was C, then from this point on, this would be the MAIN            #
@@ -100,4 +134,8 @@ z_df = load_data(redshift_file)
 data_df = clear_nan(data_df)
 z_df = clear_nan(z_df)
 bands = available_bands(data_df)
+
+data_df=merge_redshift(data_df, z_df)
+
+preview_relations(data_df,40,40)
 
