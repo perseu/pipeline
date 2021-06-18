@@ -542,7 +542,7 @@ def photo_measure(data, zp, x0, y0, r):
         roi = data[np.int(y0-rr):np.int(y0+rr),np.int(x0-rr):np.int(x0+rr)]
         for xx in range(roi.shape[0]):
             for yy in range(roi.shape[1]):
-                if (np.sqrt((xx-rr/2)**2+(yy-rr/2)**2)<=rr): # & (roi[yy][xx]>0):
+                if (np.sqrt((xx-rr/2)**2+(yy-rr/2)**2)<=rr) & (roi[yy][xx]>0):
                     pixval.append(roi[yy][xx])
                     npix +=1
                     
@@ -561,7 +561,7 @@ def photo_measure(data, zp, x0, y0, r):
 #                        pixval.append(avgval)
 #                        accum += avgval
                         
-        erms.append(np.sqrt(np.multiply(npix,np.average(np.array(pixval)))))
+        erms.append(np.sqrt(np.multiply(npix,avgval)))
         
         magval.append(-2.5*np.log10(accum)+zp)
         
