@@ -87,17 +87,29 @@ def merge_redshift(data_df, z_df):
             
 #############################################################################
 
-def preview_relations(data_df,sx,sy):
+def preview_relations(data_df,sx,sy,hue=None):
     
     data_df[data_df[data_df.columns[2:]]<0]=np.nan
     plt.figure(figsize=(sx,sy))
-    sns.pairplot(data_df, dropna=True)
+    sns.pairplot(data_df, hue=hue, dropna=True)
     
     return 0
 
 #############################################################################
 
+def scatter_reg_1(data, x_col, y_col, hue=None, sx=20, sy=20):
+    plt.figure(figsize=(sx,sy))
+    #plt.title(title)
+    sns.lmplot(x=x_col, y=y_col, data=data, hue=hue)
+    
+    return 0
 
+#############################################################################
+
+def multi_reg(data, x_var, y_var, hue=None, kind='reg', aspect=1, height=1):
+    sns.pairplot(data=data, hue=hue, x_vars=x_var,y_vars=y_var,kind=kind,height=height,aspect=aspect)
+    
+    return 0
 
 #############################################################################
 # If this was C, then from this point on, this would be the MAIN            #
@@ -135,7 +147,11 @@ data_df = clear_nan(data_df)
 z_df = clear_nan(z_df)
 bands = available_bands(data_df)
 
+# Merging the redshift table with the estimates table. 
 data_df=merge_redshift(data_df, z_df)
 
-preview_relations(data_df,40,40)
+# This line creates a preview plot where we may find the relations between all columns.
+# Although some relations that are presented may not have a physical meaning.
+# The objective of this plot is to quickly see if there is a relation between two variables.
+preview_relations(data_df,40,40,'Band')
 
