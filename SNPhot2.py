@@ -566,8 +566,9 @@ def photo_measure(data, zp, x0, y0, r):
         magval.append(-2.5*np.log10(accum)+zp)
         
     magerr = np.abs(magval[2]-magval[1])/2
+    zerr = (-2.5*np.log10(np.average(np.array(erms))))
     
-    err = np.sqrt(magerr**2 + (-2.5*np.log10(np.average(np.array(erms))))**2)
+    err = np.sqrt(magerr**2 + zerr**2)
     
     if db_photo == 1:
         plt.imshow(roi)
@@ -577,7 +578,7 @@ def photo_measure(data, zp, x0, y0, r):
         magval[0] = -99
         err = -99
     
-    return magval[0], err
+    return magval[0], err, magerr, zerr
     
     
 ##############################################################################
@@ -678,7 +679,8 @@ object_list = valid_obj
 
 
 # Starting the measurements!
-resaccum = [['Object','Band','mag_5kpc','emag_5kpc','mag_10kpc','emag_10kpc','mag_15kpc','emag_15kpc']]
+# NOTE: Need to automatically generate this header depending on the number of appertures selected. Fixed header for 3 different appertures.
+resaccum = [['Object','Band','mag_5kpc', 'e_5kpc', 'magerr_5kpc', 'zerr_5kpc','mag_10kpc', 'e_10kpc', 'magerr_10kpc', 'zerr_10kpc', 'mag_15kpc', 'e_15kpc', 'magerr_15kpc', 'zerr_15kpc']]
 radius_register = []
 
 
@@ -721,11 +723,13 @@ for obj in object_list:
             x0, y0 = center_in_pix(header_cube[0],np.array(targets_df[targets_df['Object']==obj]['ra'])[0],np.array(targets_df[targets_df['Object']==obj]['dec'])[0])        
         
             for kk in range(len(mask_size_pix)): # In this cycle it computes the magnitudes for the desired mask sizes, and stores it first in a line accumulator laccum. At the end of the cycle the line is stored in the result accumulator resaccum.
-                mag, merr = photo_measure(final_img, zeropoint[frame.split('-')[-2]], x0, y0, mask_size_pix[kk])
+                mag, merr, magerr, zerr = photo_measure(final_img, zeropoint[frame.split('-')[-2]], x0, y0, mask_size_pix[kk])
                 laccum.append(mag)
                 laccum.append(merr)
+                laccum.append(magerr)
+                laccum.append(zerr)
                 if silentmode == 0:
-                    print('Object='+str(obj)+',\tBand='+str(band_list[band])+',\tRedshift='+str(zhelio)+',\tRedshift Error='+str(ezhelio)+',\tRadius(in kpc)='+str(mask_sizes_kpc[kk])+',\tRadius(in pixels)='+str(mask_size_pix[kk][0])+',\tMag='+str(mag)+',\tError='+str(merr))
+                    print('Object='+str(obj)+',\tBand='+str(band_list[band])+',\tRedshift='+str(zhelio)+',\tRedshift Error='+str(ezhelio)+',\tRadius(in kpc)='+str(mask_sizes_kpc[kk])+',\tRadius(in pixels)='+str(mask_size_pix[kk][0])+',\tMag='+str(mag)+',\tError='+str(merr)+',\tMag_Error='+str(magerr)+',\tz_Error='+str(zerr))
             resaccum.append(laccum)
         else:
             failed_obj.append(obj) # If the stacking function does not return an image, it does not attempt to compute the magnitudes and errors, it simply adds the object to a failure list.
