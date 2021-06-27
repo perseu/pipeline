@@ -58,7 +58,7 @@ zeropoint = {'fd':18.82, 'nd':20.08}
 ##############################################################################
 
 pix_size = 1.5 # arcsec/pixel
-mask_sizes_kpc=[5,10,15] # mask radius in kpc
+mask_sizes_kpc=[5,10,15,30] # mask radius in kpc
 targets_file = []
 redshift_file = []
 output_file = []
@@ -565,8 +565,8 @@ def photo_measure(data, zp, x0, y0, r):
         
         magval.append(-2.5*np.log10(accum)+zp)
         
-    magerr = np.abs(magval[2]-magval[1])/2
-    zerr = (-2.5*np.log10(np.average(np.array(erms))))
+    zerr = np.abs(magval[2]-magval[1])/2
+    magerr = (-2.5*np.log10(np.average(np.array(erms))))
     
     err = np.sqrt(magerr**2 + zerr**2)
     
@@ -609,7 +609,7 @@ o : CSV Output file
 args = sys.argv
 
 # Debug arguments... Comment the next line when the program is production.
-args = ['batch.py','t=outputfile_MIS_ONLY.csv','z=list_redshift.txt', 'o=results_finalMIS.txt']
+args = ['batch.py','t=outputfile_MIS_ONLY.csv','z=list_redshift.txt', 'o=results_decomposed_error_upto200.txt']
 
 # Parsing and interpreting the command line.
 for ii in range(len(args)):
@@ -680,7 +680,7 @@ object_list = valid_obj
 
 # Starting the measurements!
 # NOTE: Need to automatically generate this header depending on the number of appertures selected. Fixed header for 3 different appertures.
-resaccum = [['Object','Band','mag_5kpc', 'e_5kpc', 'magerr_5kpc', 'zerr_5kpc','mag_10kpc', 'e_10kpc', 'magerr_10kpc', 'zerr_10kpc', 'mag_15kpc', 'e_15kpc', 'magerr_15kpc', 'zerr_15kpc']]
+resaccum = [['Object','Band','mag_5kpc', 'e_5kpc', 'magerr_5kpc', 'zerr_5kpc','mag_10kpc', 'e_10kpc', 'magerr_10kpc', 'zerr_10kpc', 'mag_15kpc', 'e_15kpc', 'magerr_15kpc', 'zerr_15kpc', 'mag_30kpc', 'e_30kpc', 'magerr_30kpc', 'zerr_30kpc']]
 radius_register = []
 
 
