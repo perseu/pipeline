@@ -43,7 +43,7 @@ from astropy.stats import SigmaClip
 #                   Notes for this script...                                 #
 ##############################################################################
 """
-The cosmological constants for the calculations of the distances are taken from WMAP.
+The cosmological constants for the calculations of the distances are taken from WMAP9.
 GALEX image resolution = 1.5 arcsec/pixel
 
 """
@@ -534,6 +534,7 @@ def photo_measure(data, zp, x0, y0, r):
     
     magval = []
     erms = []
+    fval = []
     
     for rr in r:
         accum = 0
@@ -563,10 +564,14 @@ def photo_measure(data, zp, x0, y0, r):
                         
         erms.append(np.sqrt(np.multiply(npix,avgval)))
         
+        fval.append(accum)
+        
         magval.append(-2.5*np.log10(accum)+zp)
         
-    zerr = np.abs(magval[2]-magval[1])/2
-    magerr = (-2.5*np.log10(np.average(np.array(erms))))
+    ferr = np.abs(fval[2]-fval[1])/2
+    zerr = np.abs(5/(2*fval[0]*np.log(10)))*np.abs(ferr)
+    
+    magerr = np.abs((-2.5*np.log10(np.average(np.array(erms)))))
     
     err = np.sqrt(magerr**2 + zerr**2)
     
@@ -577,8 +582,10 @@ def photo_measure(data, zp, x0, y0, r):
     if (magval[0] == np.inf) | (magval[0] == np.NaN) | (err == np.inf) | (err == np.NaN):
         magval[0] = -99
         err = -99
+        magerr = -99
+        zerr = -99
     
-    return magval[0], err, magerr, zerr
+    return magval[0], err, magerr, zerr, npix
     
     
 ##############################################################################
@@ -609,7 +616,7 @@ o : CSV Output file
 args = sys.argv
 
 # Debug arguments... Comment the next line when the program is production.
-args = ['batch.py','t=outputfile_MIS_ONLY.csv','z=list_redshift.txt', 'o=results_decomposed_error_upto200.txt']
+args = ['batch.py','t=outputfile_MIS_ONLY.csv','z=list_redshift.txt', 'o=results_decomposed_error_upto30_pix.txt']
 
 # Parsing and interpreting the command line.
 for ii in range(len(args)):
@@ -680,7 +687,7 @@ object_list = valid_obj
 
 # Starting the measurements!
 # NOTE: Need to automatically generate this header depending on the number of appertures selected. Fixed header for 3 different appertures.
-resaccum = [['Object','Band','mag_5kpc', 'e_5kpc', 'magerr_5kpc', 'zerr_5kpc','mag_10kpc', 'e_10kpc', 'magerr_10kpc', 'zerr_10kpc', 'mag_15kpc', 'e_15kpc', 'magerr_15kpc', 'zerr_15kpc', 'mag_30kpc', 'e_30kpc', 'magerr_30kpc', 'zerr_30kpc']]
+resaccum = [['Object','Band','mag_5kpc', 'e_5kpc', 'magerr_5kpc', 'zerr_5kpc', 'npix_5kpc','mag_10kpc', 'e_10kpc', 'magerr_10kpc', 'zerr_10kpc', 'npix_10kpc', 'mag_15kpc', 'e_15kpc', 'magerr_15kpc', 'zerr_15kpc', 'npix_15kpc', 'mag_30kpc', 'e_30kpc', 'magerr_30kpc', 'zerr_30kpc', 'npix_30kpc']]
 radius_register = []
 
 
@@ -723,13 +730,14 @@ for obj in object_list:
             x0, y0 = center_in_pix(header_cube[0],np.array(targets_df[targets_df['Object']==obj]['ra'])[0],np.array(targets_df[targets_df['Object']==obj]['dec'])[0])        
         
             for kk in range(len(mask_size_pix)): # In this cycle it computes the magnitudes for the desired mask sizes, and stores it first in a line accumulator laccum. At the end of the cycle the line is stored in the result accumulator resaccum.
-                mag, merr, magerr, zerr = photo_measure(final_img, zeropoint[frame.split('-')[-2]], x0, y0, mask_size_pix[kk])
+                mag, merr, magerr, zerr, npix = photo_measure(final_img, zeropoint[frame.split('-')[-2]], x0, y0, mask_size_pix[kk])
                 laccum.append(mag)
                 laccum.append(merr)
                 laccum.append(magerr)
                 laccum.append(zerr)
+                laccum.append(npix)
                 if silentmode == 0:
-                    print('Object='+str(obj)+',\tBand='+str(band_list[band])+',\tRedshift='+str(zhelio)+',\tRedshift Error='+str(ezhelio)+',\tRadius(in kpc)='+str(mask_sizes_kpc[kk])+',\tRadius(in pixels)='+str(mask_size_pix[kk][0])+',\tMag='+str(mag)+',\tError='+str(merr)+',\tMag_Error='+str(magerr)+',\tz_Error='+str(zerr))
+                    print('Object='+str(obj)+',\tBand='+str(band_list[band])+',\tRedshift='+str(zhelio)+',\tRedshift Error='+str(ezhelio)+',\tRadius(in kpc)='+str(mask_sizes_kpc[kk])+',\tRadius(in pixels)='+str(mask_size_pix[kk][0])+',\tMag='+str(mag)+',\tError='+str(merr)+',\tMag_Error='+str(magerr)+',\tz_Error='+str(zerr)+',\tn_pixels='+str(npix))
             resaccum.append(laccum)
         else:
             failed_obj.append(obj) # If the stacking function does not return an image, it does not attempt to compute the magnitudes and errors, it simply adds the object to a failure list.
