@@ -12,6 +12,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+#from sklearn.linear_model import LinearRegression
+from sklearn import linear_model
 import sys
 import os
 
@@ -40,6 +42,14 @@ def clear_nan(df):
     
     df.replace(np.nan,value=-99, inplace=True)
     return df
+
+#############################################################################
+
+def set_nan(data_df):
+    
+    data_df[data_df[data_df.columns[2:]]<0]=np.nan
+    
+    return data_df
 
 #############################################################################
 
@@ -89,7 +99,8 @@ def merge_redshift(data_df, z_df):
 
 def preview_relations(data_df,sx,sy,hue=None):
     
-    data_df[data_df[data_df.columns[2:]]<0]=np.nan
+    #data_df[data_df[data_df.columns[2:]]<0]=np.nan
+    data_df=set_nan(data_df)
     plt.figure(figsize=(sx,sy))
     sns.pairplot(data_df, hue=hue, dropna=True)
     
@@ -98,18 +109,33 @@ def preview_relations(data_df,sx,sy,hue=None):
 #############################################################################
 
 def scatter_reg_1(data, x_col, y_col, hue=None, sx=20, sy=20):
+    data=set_nan(data)
     plt.figure(figsize=(sx,sy))
     #plt.title(title)
-    sns.lmplot(x=x_col, y=y_col, data=data, hue=hue)
+    sns.lmplot(x=x_col, y=y_col, data=data, hue=hue,dropna=True)
     
     return 0
 
 #############################################################################
 
 def multi_reg(data, x_var, y_var, hue=None, kind='reg', aspect=1, height=1):
-    sns.pairplot(data=data, hue=hue, x_vars=x_var,y_vars=y_var,kind=kind,height=height,aspect=aspect)
+    
+    data=set_nan(data)
+    sns.pairplot(data=data, hue=hue, x_vars=x_var,y_vars=y_var,kind=kind,height=height,aspect=aspect,dropna=True)
     
     return 0
+
+#############################################################################
+
+
+
+#############################################################################
+
+def reg_parameters(data, x_col, y_col):
+    
+    
+    
+    pass
 
 #############################################################################
 # If this was C, then from this point on, this would be the MAIN            #
@@ -119,7 +145,7 @@ def multi_reg(data, x_var, y_var, hue=None, kind='reg', aspect=1, height=1):
 args = sys.argv
 
 # Debug arguments... Comment the next line when the program is production.
-args = ['batch.py','z=list_redshift.txt', 'r=results_finalMIS.txt']
+args = ['batch.py','z=list_redshift.txt', 'r=results_decomposed_error_upto30_pix.txt']
 
 # Parsing and interpreting the command line.
 for ii in range(len(args)):
@@ -153,5 +179,13 @@ data_df=merge_redshift(data_df, z_df)
 # This line creates a preview plot where we may find the relations between all columns.
 # Although some relations that are presented may not have a physical meaning.
 # The objective of this plot is to quickly see if there is a relation between two variables.
-preview_relations(data_df,40,40,'Band')
+# preview_relations(data_df,100,100,'Band')
+
+### Relations between columns
+# Relation between magnitude measurements and redshift.
+multi_reg(data=data_df, x_var=['z'],y_var=['mag_5kpc','mag_10kpc','mag_15kpc'],hue='Band', kind='reg', aspect=1, height=10)
+
+# Relation plot matrix between magnitudes and associated errors. In this case only the diagonal has the correct relations.
+multi_reg(data=data_df, x_var=['mag_5kpc','mag_10kpc','mag_15kpc'],y_var=['e_5kpc','e_10kpc','e_15kpc'],hue='Band', kind='scatter', aspect=1, height=5)
+
 
