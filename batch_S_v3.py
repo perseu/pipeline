@@ -40,7 +40,9 @@ project_params = ['MIS', 'AIS']
 # Control variables                                                         #
 #############################################################################
 
-chkavail = True
+chkavail = True                 # - Check if exists data from any listed survey
+getall = True                   # - Gets data from all surveys, independently of
+                                # coverage.
 
 #############################################################################
 # Constants                                                                 #
@@ -154,11 +156,14 @@ for ii in range(targets_df.shape[0]):
         if(chkavail==True):
             sleep(0.5)
             avail=check_avail(RAstr, DECstr, radius)
-            if 'HST' in avail: nhst+=1
-            if 'GALEX' in avail: ngal+=1
-            if ('GALEX' in avail) & ('HST' in avail): ncomp+=1
+            if 'PS1' in avail: 
+                nhst+=1
+            if 'GALEX' in avail: 
+                ngal+=1
+            if ('GALEX' in avail) & ('PS1' in avail): 
+                ncomp+=1
             
             print('\nObject: '+str(targets_df['snname'][ii].split()[0])+' was observed on the following surveys: \n'+str(avail))
-        print('\nGALEX: '+str(ngal)+'\nHST: '+str(nhst)+'\nBoth: '+str(ncomp))    
+        print('\nGALEX: '+str(ngal)+'\nPS1: '+str(nhst)+'\nBoth: '+str(ncomp))    
         
         # count, ObjIDs = check_exist_location(pos.ra.value, pos.dec.value, radius, 'GALEX', 'descript', 'project')
