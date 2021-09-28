@@ -45,7 +45,7 @@ from astropy.stats import SigmaClip
 """
 The cosmological constants for the calculations of the distances are taken from WMAP9.
 GALEX image resolution = 1.5 arcsec/pixel
-
+PS1 image resolution = 0.25 arcsec/pixel
 """
 ##############################################################################
 #                   Constants                                                #
