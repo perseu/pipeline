@@ -45,7 +45,7 @@ from astropy.stats import SigmaClip
 """
 The cosmological constants for the calculations of the distances are taken from WMAP9.
 GALEX image resolution = 1.5 arcsec/pixel
-PS1 image resolution = 0.25 arcsec/pixel
+PS1 image resolution = 0.258 arcsec/pixel
 """
 ##############################################################################
 #                   Constants                                                #
@@ -58,6 +58,7 @@ zeropoint = {'fd':18.82, 'nd':20.08}
 ##############################################################################
 
 pix_size = 1.5 # arcsec/pixel
+p_size = {'GALEX':1.5, 'PS1':0.25}
 mask_sizes_kpc=[5,10,15,30] # mask radius in kpc
 targets_file = []
 redshift_file = []

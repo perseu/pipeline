@@ -17,7 +17,6 @@ import os
 import csv
 from sys import exit
 from os import path
-from sys import exit
 from astroquery.mast import Observations
 from astropy import units as u
 from astropy.coordinates import SkyCoord

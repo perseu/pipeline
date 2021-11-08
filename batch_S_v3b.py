@@ -48,6 +48,7 @@ project_params = ['MIS', 'AIS']
 chkavail = True                 # - Check if exists data from any listed survey
 getall = True                   # - Gets data from all surveys, independently of
                                 # coverage.
+counting = True
 
 #############################################################################
 # Constants                                                                 #
@@ -194,8 +195,8 @@ if len(args) > 1:
 # of the targets and download the desired images.
 
 ngal = 0
-nhst = 0
-nps1 = 0
+nsdss = 0
+nnone = 0
 ncomp = 0
 location=[]
 
@@ -212,6 +213,16 @@ for ii in range(targets_df.shape[0]):
         #avail,location = check_avail(pos.ra.deg, pos.dec.deg, radius)
         avail,location = check_avail(pos, radius)
         print('\nObject: '+str(targets_df['snname'][ii].split()[0])+' was observed on the following surveys: \n'+str(avail))
+        
+        if counting == True:
+            if set(['GALEX']).issubset(set(avail)): ngal += 1
+            if set(['SDSS']).issubset(set(avail)): nsdss += 1
+            if set(['None']).issubset(set(avail)): nnone += 1
+            if ('GALEX' in avail) & ('SDSS' in avail): ncomp += 1
+            
+        
+            
+        
 
 # =============================================================================
 #         avail,location = check_avail(pos.ra.deg, pos.dec.deg, radius)

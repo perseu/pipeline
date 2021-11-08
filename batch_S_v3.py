@@ -16,6 +16,8 @@ from os import path
 from sys import exit
 from time import sleep
 from astroquery.mast import Observations
+from astroquery.sdss import SDSS
+from astropy.coordinates import ICRS, Galactic, FK4, FK5
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
@@ -28,11 +30,14 @@ from astropy.coordinates import SkyCoord
 filelist = []
 outputfile = []
 count = 0
+ObsIDNum = 0 # This value is differentiates Observations of PS1.
 survey = ['GALEX', 'HST']
-dict_bands = {'GALEX':['FUV','NUV'],'HST_WFC3':['F1','F2','F3']}
+dict_bands = {'GALEX':['FUV','NUV'],'PS1':['i','g','r','y','z']}
 descript_params = ['Background subtracted intensity map (J2000)', 
                     'Sky background image (J2000)', 
-                    'Intensity map (J2000)']
+                    'Intensity map (J2000)',
+                    'MIS',
+                    'stack data image']
 
 project_params = ['MIS', 'AIS']
 
@@ -54,7 +59,18 @@ radius= "0.02 deg"
 # Functions                                                                 #
 #############################################################################
 
-def check_exist_location(ra, dec, radius, survey, descript, project):
+
+
+def check_avail(ra, dec, radius):
+    
+    avail_surveys = []
+    location = str(ra)+' '+str(dec)
+    avail_surveys=np.unique(np.array(Observations.query_region(location)['obs_collection']))
+    return avail_surveys, location
+
+#############################################################################
+
+def filter_for_download(ra, dec, radius, survey):
     
 
     # This function takes the columns of RA and DEC to check if there are any observations 
@@ -67,6 +83,8 @@ def check_exist_location(ra, dec, radius, survey, descript, project):
     location = str(ra)+' '+str(dec)
         
     results = Observations.query_region(location,radius = radius)
+    
+    # This block of code filters the GALEX data of interest.
     if(survey == 'GALEX'):
         final = results[(results['obs_collection']==survey) & 
                         (results['dataproduct_type']=='image')]
@@ -78,23 +96,43 @@ def check_exist_location(ra, dec, radius, survey, descript, project):
                                    (data_products_by_obs['description']==descript_params[2])) & 
                                   ((data_products_by_obs['project']==project_params[0]))] 
     
-    if(survey == 'HST'):
-        print('\nWIP!!!\n')
+    # This block of code filters the PS1 data of interest.
+    if(survey == 'PS1'):
+        final = results[(results['obs_collection']==survey)]
+        data_products_by_obs = Observations.get_product_list(final)
+        ObjIDs = data_products_by_obs[(data_products_by_obs['description']==descript_params[4])]
     
+    # This small block verifies if any information was returned. If no information was returned,
+    # then it returns -9999 as an error code.
     counts = len(ObjIDs)
     if counts == 0:
         counts=-9999
         ObjIDs=-9999
         
+    # Returns the number of images found and the Object IDs for download.
     return counts, ObjIDs
 
 #############################################################################
 
-def check_avail(ra, dec, radius):
+
+def strip_filename(survey,path):
     
-    location = str(ra)+' '+str(dec)
-    avail_surveys=np.unique(np.array(Observations.query_region(location)['obs_collection']))
-    return avail_surveys
+    if(survey == 'PS1'):
+        splitted = (path.split('\\')[-1]).split('.')
+        band = splitted[6]
+        cellx = splitted[3]
+        celly = splitted[4]
+        stat = splitted[7]
+        return survey, band, cellx, celly, stat
+    
+    if(survey == 'GALEX'):
+        temp = filelocation.split('\\')
+        expinfo=(temp[-1].split('-'))
+        band = expinfo[-2]
+        runid = (expinfo[-3]).split('_')[-1]
+        einfo = (expinfo[-1]).split('.')[0]
+        return einfo, runid, band
+        
 
 #############################################################################
 # The Main                                                                  #
@@ -141,10 +179,12 @@ if len(args) > 1:
 
 ngal = 0
 nhst = 0
+nps1 = 0
 ncomp = 0
+location=[]
 
 for ii in range(targets_df.shape[0]):
-    
+    data_products = []
     # This line below verifies that the important information is there. RA and Dec.
     if (str(targets_df['decsn'][ii]).split() != ['nan']) & (str(targets_df['rasn'][ii]).split() != ['nan']):
         
@@ -153,17 +193,24 @@ for ii in range(targets_df.shape[0]):
         DECstr = str(targets_df['decsn'][ii]).split()[0]
         
         pos = SkyCoord(RAstr,DECstr,frame='fk5',unit=(u.hourangle,u.deg))
-        if(chkavail==True):
-            sleep(0.5)
-            avail=check_avail(RAstr, DECstr, radius)
-            if 'PS1' in avail: 
-                nhst+=1
-            if 'GALEX' in avail: 
-                ngal+=1
-            if ('GALEX' in avail) & ('PS1' in avail): 
-                ncomp+=1
-            
-            print('\nObject: '+str(targets_df['snname'][ii].split()[0])+' was observed on the following surveys: \n'+str(avail))
-        print('\nGALEX: '+str(ngal)+'\nPS1: '+str(nhst)+'\nBoth: '+str(ncomp))    
+
+        avail,location = check_avail(pos.ra.deg, pos.dec.deg, radius)
+        
+        print('\nObject: '+str(targets_df['snname'][ii].split()[0])+' was observed on the following surveys: \n'+str(avail))
+        print('\nGALEX: '+str(ngal)+'\nPS1: '+str(nps1)+'\nHST: '+str(nhst)+'\nBoth: '+str(ncomp))    
+        
+        if 'PS1' in avail: 
+            nps1+=1
+            count, ObjIDs = filter_for_download(pos.ra.deg, pos.dec.deg, radius, 'PS1')
+            data_products = Observations.download_products(ObjIDs)           
+        if 'HST' in avail: 
+            nhst+=1
+        if 'GALEX' in avail: 
+            ngal+=1
+            count, ObjIDs = filter_for_download(pos.ra.deg, pos.dec.deg, radius, 'GALEX')
+            data_products = Observations.download_products(ObjIDs)
+        if ('GALEX' in avail) & (('PS1' in avail)|('HST' in avail)): 
+            ncomp+=1
+        
         
         # count, ObjIDs = check_exist_location(pos.ra.value, pos.dec.value, radius, 'GALEX', 'descript', 'project')
