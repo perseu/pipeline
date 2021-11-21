@@ -32,7 +32,7 @@ outputfile = []
 count = 0
 ObsIDNum = 0 # This value is differentiates Observations of PS1.
 survey = ['GALEX', 'HST']
-dict_bands = {'GALEX':['FUV','NUV'],'PS1':['i','g','r','y','z']}
+dict_bands = {'GALEX':['FUV','NUV'],'PS1':['i','g','r','y','z'],'SDSS':['u','g','r','i','z']}
 descript_params = ['Background subtracted intensity map (J2000)', 
                     'Sky background image (J2000)', 
                     'Intensity map (J2000)',
@@ -40,6 +40,8 @@ descript_params = ['Background subtracted intensity map (J2000)',
                     'stack data image']
 
 project_params = ['MIS', 'AIS']
+
+SDSS_base_local = '/SDSS'
 
 #############################################################################
 # Control variables                                                         #
@@ -68,8 +70,8 @@ def check_avail(pos, radius):
     sdss_avail = []
     out = []
     location = str(pos.ra.deg)+' '+str(pos.dec.deg)
-    avail_surveys=np.unique(np.array(Observations.query_region(pos)['obs_collection']))
-    sdss_avail= SDSS.query_region(pos)
+    avail_surveys=np.unique(np.array(Observations.query_region(pos, radius=radius)['obs_collection']))
+    sdss_avail= SDSS.query_region(pos, radius=radius)
     avail_surveys=list(avail_surveys)
 
     if ('NoneType' in str(type(sdss_avail))):
@@ -99,7 +101,7 @@ def filter_for_download(ra, dec, radius, survey):
     
     location = str(ra)+' '+str(dec)
         
-    results = Observations.query_region(location,radius = radius)
+    results = Observations.query_region(location,radius = radius * u.arcsec)
     
     # This block of code filters the GALEX data of interest.
     if(survey == 'GALEX'):
@@ -114,7 +116,7 @@ def filter_for_download(ra, dec, radius, survey):
                                   ((data_products_by_obs['project']==project_params[0]))] 
     
     # This block of code filters the PS1 data of interest.
-    if(survey == 'PS1'):
+    if(survey == 'SDSS'):
         final = results[(results['obs_collection']==survey)]
         data_products_by_obs = Observations.get_product_list(final)
         ObjIDs = data_products_by_obs[(data_products_by_obs['description']==descript_params[4])]
@@ -150,6 +152,39 @@ def strip_filename(survey,path):
         einfo = (expinfo[-1]).split('.')[0]
         return einfo, runid, band
         
+#############################################################################
+
+def SDSS_download(pos, radius, datatype='image'):
+    pass
+
+
+#############################################################################
+
+def filter_and_download(pos, radius, survey, mission='MIS', datatype='image'):
+    
+    results = []
+    data_products = []
+    
+    if survey=='GALEX':
+        results = Observations.query_region(pos, radius=radius)
+        final = results[(results['obs_collection']==survey) & 
+                        (results['dataproduct_type']==datatype)]
+        
+        data_products_by_obs = Observations.get_product_list(final)
+        
+        ObjIDs = data_products_by_obs[((data_products_by_obs['description']==descript_params[0]) | 
+                                   (data_products_by_obs['description']==descript_params[1]) |
+                                   (data_products_by_obs['description']==descript_params[2])) & 
+                                  ((data_products_by_obs['project']==project_params[0]))] 
+        
+        data_products = Observations.download_products(ObjIDs,description=descript_params[0])
+        return data_products
+        
+    if survey=='SDSS':
+        results = SDSS.query_region(pos, radius=radius)
+        # data_products = SDSS.get_images(pos) 
+        pass
+
 
 #############################################################################
 # The Main                                                                  #
@@ -201,7 +236,7 @@ ncomp = 0
 location=[]
 
 for ii in range(targets_df.shape[0]):
-    data_products = []
+    
     # This line below verifies that the important information is there. RA and Dec.
     if (str(targets_df['decsn'][ii]).split() != ['nan']) & (str(targets_df['rasn'][ii]).split() != ['nan']):
         
@@ -220,9 +255,14 @@ for ii in range(targets_df.shape[0]):
             if set(['None']).issubset(set(avail)): nnone += 1
             if ('GALEX' in avail) & ('SDSS' in avail): ncomp += 1
             
-        
+        if 'GALEX' in avail:
+            data_products = []
+            downloaded_products = filter_and_download(pos, radius, 'GALEX')
             
-        
+        if 'SDSS' in avail:
+            data_products = []
+            downloaded_products = filter_and_download(pos, radius, 'SDSS')
+            
 
 # =============================================================================
 #         avail,location = check_avail(pos.ra.deg, pos.dec.deg, radius)
